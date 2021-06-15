@@ -5,8 +5,6 @@ db = true
 
 function initDesintigrator()
 
-    designObjectMetatable = buildDesinObject(nil)
-
     desin = {
         objects = {}
     }
@@ -20,9 +18,18 @@ function initDesintigrator()
     desin.active = function()
         return GetString('game.player.tool') == desin.setup.name and GetPlayerVehicle() == 0
     end
+    desin.didShoot = function() 
+        return InputPressed('lmb') and desin.active()
+    end
 
-    RegisterTool(desin.setup.name, desin.setup.title, desin.setup.voxPath)
-    SetBool('game.tool.'..desin.setup.name..'.enabled', true)
+    desin.setTool = function(enabled)
+        RegisterTool(desin.setup.name, desin.setup.title, desin.setup.voxPath)
+        SetBool('game.tool.'..desin.setup.name..'.enabled', enabled or true)
+    end
+
+    -- Init
+    desinObjectMetatable = buildDesinObject(nil) -- Desin objects metatable.
+    desin.setTool()
 
 end
 
@@ -35,26 +42,26 @@ end
 
 function shootDesintigrator()
 
-    if InputPressed('lmb') and desin.active() then
+    if desin.didShoot() then
 
         local camTr = GetCameraTransform()
         local hit, hitPos, hitShape = RaycastFromTransform(camTr, 100)
         if hit then
 
+            -- Choose whether to add raycasted object to desin.objects.
             local shapeIsValid = true
-
             for i = 1, #desin.objects do
-                -- Check if shape is already in desin.targetShapes.
+                -- Check if shape is already in desin.objects.
                 if hitShape == desin.objects[i].shape then
                     shapeIsValid = false
                     if db then DebugPrint('Shape invalid' .. sfnTime()) end
                     break -- Reject invalid desin object.
                 end
             end
-
             if shapeIsValid then
-                local designObject = buildDesinObject(hitShape)
-                table.insert(desin.objects, designObject) -- Insert valid design object.
+                local desinObject = buildDesinObject(hitShape)
+                setmetatable(desinObject, desinObjectMetatable)
+                table.insert(desin.objects, desinObject) -- Insert valid desin object.
                 if db then DebugPrint('Shape added' .. sfnTime()) end
             end
 
@@ -69,21 +76,20 @@ end
 
 function desintigrateShapes()
 
-    -- Desintigrate each shape in desin.targetShapes.
-    for i = 1, #desin.targetShapes do
-        local shape = desin.targetShapes[i]
-        desintigrateShape(shape)
+    -- Desintigrate each shape in desin.objects.
+    for i = 1, #desin.objects do
+        desintigrateShape(desin.objects[i])
     end
 
     if db then DebugWatch('Desintigrating shapes', sfnTime()) end
-    if db then DebugWatch('Desin shapes count', #desin.targetShapes) end
+    if db then DebugWatch('Desin shapes count', #desin.objects) end
 
 end
 
 
-function desintigrateShape(shape)
+function desintigrateShape(desinObject)
 
-    local sMin, sMax = GetShapeBounds(shape)
+    local sMin, sMax = GetShapeBounds(desinObject.shape)
     if db then AabbDraw(sMin, sMax, 0, 1, 0) end -- Draw aabb
 
 end
