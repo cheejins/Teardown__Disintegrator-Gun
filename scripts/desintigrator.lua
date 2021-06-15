@@ -5,8 +5,10 @@ db = true
 
 function initDesintigrator()
 
+    designObjectMetatable = buildDesinObject(nil)
+
     desin = {
-        targetShapes = {}
+        objects = {}
     }
 
     desin.setup = {
@@ -19,7 +21,6 @@ function initDesintigrator()
         return GetString('game.player.tool') == desin.setup.name and GetPlayerVehicle() == 0
     end
 
-
     RegisterTool(desin.setup.name, desin.setup.title, desin.setup.voxPath)
     SetBool('game.tool.'..desin.setup.name..'.enabled', true)
 
@@ -27,6 +28,12 @@ end
 
 
 function runDesintigrator()
+    shootDesintigrator()
+    desintigrateShapes()
+end
+
+
+function shootDesintigrator()
 
     if InputPressed('lmb') and desin.active() then
 
@@ -36,16 +43,18 @@ function runDesintigrator()
 
             local shapeIsValid = true
 
-            for i = 1, #desin.targetShapes do
+            for i = 1, #desin.objects do
                 -- Check if shape is already in desin.targetShapes.
-                if hitShape == desin.targetShapes[i] then
+                if hitShape == desin.objects[i].shape then
                     shapeIsValid = false
                     if db then DebugPrint('Shape invalid' .. sfnTime()) end
+                    break -- Reject invalid desin object.
                 end
             end
 
             if shapeIsValid then
-                table.insert(desin.targetShapes, hitShape)
+                local designObject = buildDesinObject(hitShape)
+                table.insert(desin.objects, designObject) -- Insert valid design object.
                 if db then DebugPrint('Shape added' .. sfnTime()) end
             end
 
@@ -55,12 +64,7 @@ function runDesintigrator()
 
     end
 
-    desintigrateShapes()
-
 end
-
-
-
 
 
 function desintigrateShapes()
@@ -76,9 +80,33 @@ function desintigrateShapes()
 
 end
 
+
 function desintigrateShape(shape)
 
     local sMin, sMax = GetShapeBounds(shape)
     if db then AabbDraw(sMin, sMax, 0, 1, 0) end -- Draw aabb
 
+end
+
+
+function buildDesinObject(shape)
+    t = {}
+
+    t.shape = shape
+    t.body = GetShapeBody(shape)
+    t.points = GetShapeSize(shape)
+
+    -- Raycasting closest points after a desintigration step.
+    t.spread = {
+        positions = {}, -- A new position is set (closest raycasted point) after the old position has been processed.
+        done = false,
+    }
+
+    -- Sets the starting positions of the desintigrations.
+    t.start = {
+        positions = {},
+        done = false,
+    }
+
+    return t
 end
