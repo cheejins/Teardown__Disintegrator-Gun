@@ -82,6 +82,12 @@ function AabbCheckOverlap(aMin, aMax, bMin, bMax)
     (aMin[2] <= bMax[2] and aMax[2] >= bMin[2]) and
     (aMin[3] <= bMax[3] and aMax[3] >= bMin[3])
 end
+function AabbCheckPointInside(aMin, aMax, p)
+    return 
+    (p[1] <= aMax[1] and p[1] >= aMin[1]) and
+    (p[2] <= aMax[2] and p[2] >= aMin[2]) and
+    (p[3] <= aMax[3] and p[3] >= aMin[3])
+end
 function AabbClosestEdge(pos, shape)
 
     local shapeAabbMin, shapeAabbMax = GetShapeBounds(shape)
@@ -116,6 +122,9 @@ function AabbSortEdges(startPos, endPos, edges)
     edges = tableSwapIndex(edges, #edges, endIndex)
     return edges
 end
+function AabbDimensions(min, max)
+    return Vec(max[1] - min[1], max[2] - min[2], max[3] - min[3])
+end
 
 
 
@@ -130,32 +139,29 @@ end
 
 --[[RAYCASTING]]
 ---comment
----@param tr table
+---@param rcTr table
 ---@param distance number
 ---@param rad number
 ---@param rejectBodies table
 ---@param rejectShapes table
-function RaycastFromTransform(tr, distance, rad, rejectBodies, rejectShapes)
+function RaycastFromTransform(rcTr, distance, rad, rejectBodies, rejectShapes)
 
     if distance ~= nil then distance = -distance else distance = -300 end
-
     if rejectBodies ~= nil then for i = 1, #rejectBodies do QueryRejectBody(rejectBodies[i]) end end
     if rejectShapes ~= nil then for i = 1, #rejectShapes do QueryRejectShape(rejectShapes[i]) end end
 
-    local plyTransform = tr
-    local fwdPos = TransformToParentPoint(plyTransform, Vec(0, 0, distance))
-    local direction = VecSub(fwdPos, plyTransform.pos)
+    local fwdPos = TransformToParentPoint(rcTr, Vec(0, 0, distance))
+    local direction = VecSub(fwdPos, rcTr.pos)
     local dist = VecLength(direction)
     direction = VecNormalize(direction)
-    QueryRejectBody(rejectBody)
-    local h, d, n, s = QueryRaycast(tr.pos, direction, dist, rad)
+
+    local h, d, n, s = QueryRaycast(rcTr.pos, direction, dist, rad)
     if h then
-        local p = TransformToParentPoint(plyTransform, Vec(0, 0, d * -1))
+        local p = TransformToParentPoint(rcTr, Vec(0, 0, d * -1))
         local b = GetShapeBody(s)
         return h, p, s, b
-    else
-        return nil
     end
+    return nil
 end
 function diminishBodyAngVel(body, rate)
     local angVel = GetBodyAngularVelocity(body)
