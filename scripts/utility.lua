@@ -139,29 +139,32 @@ end
 
 --[[RAYCASTING]]
 ---comment
----@param rcTr table
+---@param tr table
 ---@param distance number
 ---@param rad number
 ---@param rejectBodies table
 ---@param rejectShapes table
-function RaycastFromTransform(rcTr, distance, rad, rejectBodies, rejectShapes)
+function RaycastFromTransform(tr, distance, rad, rejectBodies, rejectShapes)
 
     if distance ~= nil then distance = -distance else distance = -300 end
+
     if rejectBodies ~= nil then for i = 1, #rejectBodies do QueryRejectBody(rejectBodies[i]) end end
     if rejectShapes ~= nil then for i = 1, #rejectShapes do QueryRejectShape(rejectShapes[i]) end end
 
-    local fwdPos = TransformToParentPoint(rcTr, Vec(0, 0, distance))
-    local direction = VecSub(fwdPos, rcTr.pos)
+    local plyTransform = tr
+    local fwdPos = TransformToParentPoint(plyTransform, Vec(0, 0, distance))
+    local direction = VecSub(fwdPos, plyTransform.pos)
     local dist = VecLength(direction)
     direction = VecNormalize(direction)
-
-    local h, d, n, s = QueryRaycast(rcTr.pos, direction, dist, rad)
+    QueryRejectBody(rejectBody)
+    local h, d, n, s = QueryRaycast(tr.pos, direction, dist, rad)
     if h then
-        local p = TransformToParentPoint(rcTr, Vec(0, 0, d * -1))
+        local p = TransformToParentPoint(plyTransform, Vec(0, 0, d * -1))
         local b = GetShapeBody(s)
         return h, p, s, b
+    else
+        return nil
     end
-    return nil
 end
 function diminishBodyAngVel(body, rate)
     local angVel = GetBodyAngularVelocity(body)
@@ -201,9 +204,9 @@ local debugSounds = {
     beep = LoadSound("warning-beep"),
     buzz = LoadSound("light/spark0"),
     chime = LoadSound("elevator-chime"),}
-function beep(vol) PlaySound(debugSounds.beep, GetPlayerPos(), vol or 0.3) end
-function buzz(vol) PlaySound(debugSounds.buzz, GetPlayerPos(), vol or 0.3) end
-function chime(vol) PlaySound(debugSounds.chime, GetPlayerPos(), vol or 0.3) end
+function beep(pos, vol) PlaySound(debugSounds.beep, pos or GetPlayerPos(), vol or 0.3) end
+function buzz(pos, vol) PlaySound(debugSounds.buzz, pos or GetPlayerPos(), vol or 0.3) end
+function chime(pos, vol) PlaySound(debugSounds.chime, pos or GetPlayerPos(), vol or 0.3) end
 
 -- ---comment
 -- ---@param path string Path to the folder of sounds.

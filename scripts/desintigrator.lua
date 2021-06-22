@@ -35,7 +35,7 @@ function initDesintigrator()
 
     desin.timer = {
         time = 0,
-        rpm = 600
+        rpm = 900
     }
 
     -- Init
@@ -78,8 +78,6 @@ function shootDesintigrator()
 
         end
 
-        beep()
-
     elseif desin.input.didReset() then
         desin.objects = {}
         if db then DebugWatch('Desin objects reset', sfnTime()) end
@@ -90,7 +88,20 @@ end
 
 function desintigrateShapes()
     -- Desintigrate each shape in desin.objects.
-    for i = 1, #desin.objects do desintigrateShape(desin.objects[i]) end
+    for i = 1, #desin.objects do 
+
+        if not desin.objects[i].tooSmall then
+
+            desintigrateShape(desin.objects[i])
+
+        else
+
+            desin.objects[i] = nil
+            if db then DebugPrint('desin obj removed ' .. sfnTime()) end
+
+        end
+
+    end
 
     if db then DebugWatch('Desintigrating shapes', sfnTime()) end
     if db then DebugWatch('Desin shapes count', #desin.objects) end
@@ -106,7 +117,7 @@ function desintigrateShape(desinObject)
         desinObject.start.desintigrationStep()
         desinObject.start.done = true
         if db then DebugWatch('Desintigrating start done', sfnTime()) end
-    elseif
+    else
         desinObject.spread.desintigrationStep()
     end
 
@@ -119,15 +130,16 @@ function buildDesinObject(shape)
 
     desinObject.shape = shape
     desinObject.body = GetShapeBody(shape)
+    desinObject.tooSmall = false
 
     desinObject.properties = {
-        holeSize = 1,
+        holeSize = 0.2,
     }
 
 
     -- Sets the starting positions of the desintigrations.
     desinObject.start = {
-        points = 10,
+        points = 20,
         done = false,
     }
 
@@ -142,7 +154,8 @@ function buildDesinObject(shape)
 
         -- shape bounds.
         local sMin, sMax = GetShapeBounds(desinObject.shape)
-        if db then AabbDraw(sMin, sMax, 0, 1, 0) end -- Draw aabb
+        -- if db then AabbDraw(sMin, sMax, 0, 1, 0) end -- Draw aabb
+        if db then DrawShapeOutline(desinObject.shape, 1, 0, 0, 1) end -- Draw aabb
 
         -- Center aabb.
         local aabbCenter = VecLerp(sMin, sMax, 0.5)
@@ -159,26 +172,31 @@ function buildDesinObject(shape)
 
             local hs = desinObject.properties.holeSize
             MakeHole(pos, hs, hs, hs, hs)
-            PointLight(pos, 1, 0, 0, 0.25)
+            PointLight(pos, 1, 0.3, 0, 0.1)
 
             -- Source positions.
-            local len = 2
+            local len = 1
             local rcHit, rcHitPos, n, rcShape = QueryClosestPoint(pos, len)
-            if rcHit then
+            if rcHit and rcShape == desinObject.shape then
 
                 local mat = GetShapeMaterialAtPosition(rcShape, rcHitPos)
                 local matIsUnbreakable = mat == 'rock' or mat == 'heavymetal' or mat == 'unbreakable' or mat == 'hardmasonry'
-                -- local matIsUnbreakable = mat == 'rock'
 
                 if matIsUnbreakable then
                     desinObject.spread.positions[i] = Vec(rdm(sMin[1], sMax[1]), rdm(sMin[2], sMax[2]), rdm(sMin[3], sMax[3])) -- Random pos inside aabb
-                    beep()
                 else
                     desinObject.spread.positions[i] = rcHitPos -- Set new spread position as closest point
                 end
 
+            else
+                desinObject.spread.positions[i] = Vec(rdm(sMin[1], sMax[1]), rdm(sMin[2], sMax[2]), rdm(sMin[3], sMax[3])) -- Random pos inside aabb
+                
             end
 
+        end
+
+        if sx + sy + sz < 10 then
+            desinObject.tooSmall = true
         end
 
     end
@@ -190,7 +208,7 @@ function buildDesinObject(shape)
         -- shape bounds.
         local sMin, sMax = GetShapeBounds(desinObject.shape)
 
-        if db then AabbDraw(sMin, sMax, 0, 1, 0) end -- Draw aabb
+        -- if db then AabbDraw(sMin, sMax, 0, 1, 0) end -- Draw aabb
 
         -- Set number of desintigration points.
         local sx,sy,sz = GetShapeSize(shape)
