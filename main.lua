@@ -1,7 +1,9 @@
 #include "scripts/desintegrator.lua"
 #include "scripts/utility.lua"
+#include "scripts/info.lua"
 
 
+-- (Debug mode)
 -- db = false
 db = true
 
@@ -9,29 +11,32 @@ db = true
 function init()
     initDesintegrator()
     initSounds()
+    initInfo()
 
     updateGameTable()
     globalBody = FindBodies('', true)[1]
 end
 
 
-
-
 function tick()
 
-    updateGameTable()
+    if GetBool('savegame.mod.info.neverShow') or info.closed then -- info.lua
 
-    shootDesintegrator()
-    desintegrateShapes()
+        updateGameTable()
 
-    desin.manageMode()
-    if db then DebugWatch('Desin mode', desin.mode) end
+        shootDesintegrator()
+        desintegrateShapes()
 
-    desin.manageIsDesintegrating()
-    if db then DebugWatch('desin.isDesintegrating', desin.isDesintegrating) end
+        desin.manageMode()
+        if db then DebugWatch('Desin mode', desin.mode) end
 
-    desin.manageColor()
-    desin.manageOutline()
+        desin.manageIsDesintegrating()
+        if db then DebugWatch('desin.isDesintegrating', desin.isDesintegrating) end
+
+        desin.manageColor()
+        desin.manageOutline()
+
+    end
 
 end
 
@@ -137,7 +142,7 @@ function initDesintegrator()
         -- autoSpread = 'autoSpread', -- bodies
     }
 
-    desin.mode = desin.modes.specific
+    desin.mode = desin.modes.general
 
     desin.manageMode = function()
         if desin.input.didChangeMode() then
@@ -257,13 +262,12 @@ end
 
 function initSounds()
     sounds = {
-
         insertShape = LoadSound("snd/insertShape.ogg"),
-        reset = LoadSound("snd/reset.ogg"),
         removeShape = LoadSound("snd/removeShape.ogg"),
 
         start = LoadSound("snd/start.ogg"),
         cancel = LoadSound("snd/cancel.ogg"),
+        reset = LoadSound("snd/reset.ogg"),
 
         desinEnd = LoadSound("snd/desinEnd.ogg"),
     }
@@ -275,6 +279,8 @@ end
 
 
 function draw()
+
+    manageInfoUi()
 
     -- Draw dots at hit positions.
     if desin.isDesintegrating then
@@ -302,7 +308,7 @@ function draw()
             UiAlign('center middle')
             -- UiText('Mode: ' .. desin.mode)
             UiTextShadow(0,0,0,0.8,2,0.2)
-            UiText('mode: ' .. desin.mode)
+            UiText('mode: ' .. desin.mode .. ' (c) ')
         UiPop()
     end
 
