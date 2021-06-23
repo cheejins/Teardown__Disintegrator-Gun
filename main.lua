@@ -1,7 +1,16 @@
 #include "scripts/desintegrator.lua"
+#include "scripts/utility.lua"
+
+
+-- db = false
+db = true
+
 
 function init()
     initDesintegrator()
+    initSounds()
+
+    globalBody = FindBodies('', true)[1]
 end
 
 function tick()
@@ -49,6 +58,9 @@ function shootDesintegrator()
 
     if desin.input.didShoot() then
 
+        -- fine = shape
+        -- general = body
+
         local camTr = GetCameraTransform()
         local hit, hitPos, hitShape = RaycastFromTransform(camTr, 100)
         if hit then
@@ -58,9 +70,7 @@ function shootDesintegrator()
             for i = 1, #desin.objects do
 
                 if hitShape == desin.objects[i].shape then -- Check if shape is already in desin.objects.
-
                     shapeIsValid = false
-
                     if db then DebugPrint('Shape invalid' .. sfnTime()) end
                     break -- Reject invalid desin object.
                 end
@@ -77,8 +87,42 @@ function shootDesintegrator()
         end
 
     elseif desin.input.didReset() then
+
         desin.objects = {}
         if db then DebugWatch('Desin objects reset', sfnTime()) end
+
     end
 
+end
+
+
+function initSounds()
+    sounds = {
+        zaps = {
+            LoadSound("snd/zap1.ogg"),
+            LoadSound("snd/zap2.ogg"),
+            LoadSound("snd/zap3.ogg"),
+        },
+    }
+
+    sounds.play = {
+        zap = function (pos, vol)
+            sounds.playRandom(sounds.zaps, pos, vol or 1)
+        end,
+    }
+
+    sounds.playRandom = function(soundsTable, pos, vol)
+        local sound = math.floor(soundsTable[rdm(1, #soundsTable)])
+        PlaySound(sound, pos, vol or 1)
+    end
+end
+
+
+function draw()
+    -- Draw dots at hit positions.
+    for i = 1, #desin.objects do
+        for j = 1, #desin.objects[i].hit.positions do
+            DrawDot(desin.objects[i].hit.positions[j], math.random()/7.5, math.random()/7.5, 0, 1, 0.4, math.random()/2 + 0.25)
+        end
+    end
 end
