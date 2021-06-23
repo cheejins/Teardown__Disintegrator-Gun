@@ -13,15 +13,19 @@ function desintegrateShapes()
         end
     end
     for i = 1, #removeIndexes do
+        PlaySound(sounds.desinEnd, AabbGetShapeCenterPos(desin.objects[removeIndexes[i]].shape), 0.5)
         table.remove(desin.objects, removeIndexes[i]) -- Remove objects safely.
     end
 
 
+    -- Desintigrate shapes.
     if desin.isDesintegrating then
         for i = 1, #desin.objects do
+
             desintegrateShape(desin.objects[i])
-            local pos = GetShapeWorldTransform(desin.objects[i].shape).pos
-            PlayLoop(loops.desinLoop, pos, 0.5)
+
+            PlayLoop(loops.desinLoop, AabbGetShapeCenterPos(desin.objects[i].shape), 0.6) -- Desintigrate sound.
+            PlayLoop(loops.desinLoop, game.ppos, 0.1)
         end
     end
 

@@ -10,11 +10,16 @@ function init()
     initDesintegrator()
     initSounds()
 
+    updateGameTable()
     globalBody = FindBodies('', true)[1]
 end
 
 
+
+
 function tick()
+
+    updateGameTable()
 
     shootDesintegrator()
     desintegrateShapes()
@@ -26,7 +31,6 @@ function tick()
     if db then DebugWatch('desin.isDesintegrating', desin.isDesintegrating) end
 
     desin.manageColor()
-
     desin.manageOutline()
 
 end
@@ -75,9 +79,9 @@ function initDesintegrator()
             desin.isDesintegrating = not desin.isDesintegrating
 
             if desin.isDesintegrating then
-                PlaySound(sounds.b6, GetPlayerTransform().pos, 0.75)
+                PlaySound(sounds.cancel, game.ppos, 0.4)
             else
-                PlaySound(sounds.b5, GetPlayerTransform().pos, 0.75)
+                PlaySound(sounds.start, game.ppos, 0.2)
             end
 
         end
@@ -103,9 +107,25 @@ function initDesintegrator()
 
 
     desin.manageOutline = function()
+
+        local isDesin = desin.isDesintegrating
+
         local c = desin.color
+        local a = 1
+        if isDesin then a = 0.5 end
+
         for i = 1, #desin.objects do
-            DrawShapeOutline(desin.objects[i].shape, c[1], c[2], c[3], 1)
+
+            local shape = desin.objects[i].shape
+
+            DrawShapeOutline(shape, c[1], c[2], c[3], a)
+
+            -- if not isDesin then
+            --     local mi, ma = GetShapeBounds(shape)
+            --     local qShapes = QueryAabbShapes(mi, ma)
+            --     AabbDraw(mi, ma, c[1], c[2], c[3], a)
+            -- end
+
         end
     end
 
@@ -152,7 +172,7 @@ function initDesintegrator()
                 shapeIsValid = false
                 desin.remove.shape(desin.objects[i].shape) -- Remove shape.
 
-                PlaySound(sounds.b5, GetPlayerTransform().pos)
+                PlaySound(sounds.b5, game.ppos)
 
                 if db then DebugPrint('Shape invalid' .. sfnTime()) end
                 break -- Reject invalid desin object.
@@ -162,7 +182,7 @@ function initDesintegrator()
 
         if shapeIsValid then
             desin.insert.shape(shape)
-            PlaySound(sounds.b1, GetPlayerTransform().pos)
+            PlaySound(sounds.b1, game.ppos)
         end
     end
 
@@ -184,11 +204,17 @@ function initDesintegrator()
 
     desin.remove = {}
     desin.remove.shape = function(shape)
+        local indexesToRemove = {}
         for i = 1, #desin.objects do
             if desin.objects[i].shape == shape then
-                table.remove(desin.objects, i)
+                table.insert(indexesToRemove, i)
             end
         end
+
+        for i = 1, #indexesToRemove do
+            table.remove(desin.objects, indexesToRemove[i])
+        end
+
     end
 
 end
@@ -196,77 +222,55 @@ end
 
 function shootDesintegrator()
 
-    if desin.input.didSelect() then -- desin shoot
+    local camTr = GetCameraTransform()
+    local hit, hitPos, hitShape, hitBody = RaycastFromTransform(camTr, 150)
+    if hit then
 
-        local camTr = GetCameraTransform()
-        local hit, hitPos, hitShape, hitBody = RaycastFromTransform(camTr, 200)
-        if hit then
+        if desin.input.didSelect() then -- desin shoot
 
-            if desin.mode == desin.modes.specific then
 
-                desin.insert.processShape(hitShape)
+                if desin.mode == desin.modes.specific then
 
-            elseif desin.mode == desin.modes.general then
+                    desin.insert.processShape(hitShape)
 
-                desin.insert.body(hitShape, hitBody)
+                elseif desin.mode == desin.modes.general then
 
-            -- elseif desin.mode == desin.modes.autoSpread then
-            end
+                    desin.insert.body(hitShape, hitBody)
+
+                -- elseif desin.mode == desin.modes.autoSpread then
+                end
+
+
+        elseif desin.input.didReset() then -- desin reset
+
+            desin.objects = {}
+            desin.isDesintegrating = false
+            PlaySound(sounds.b3, game.ppos, 1)
+            if db then DebugWatch('Desin objects reset', sfnTime()) end
 
         end
 
-    elseif desin.input.didReset() then -- desin reset
-
-        desin.objects = {}
-        desin.isDesintegrating = false
-        PlaySound(sounds.b3, GetPlayerTransform().pos, 1)
-        if db then DebugWatch('Desin objects reset', sfnTime()) end
-
     end
+
 
 end
 
 
 function initSounds()
     sounds = {
-        zaps = {
-            LoadSound("snd/zap1.ogg"),
-            LoadSound("snd/zap2.ogg"),
-            LoadSound("snd/zap3.ogg"),
-            LoadSound("snd/zap4.ogg"),
-            LoadSound("snd/zap5.ogg"),
-            LoadSound("snd/zap6.ogg"),
-            LoadSound("snd/zap7.ogg"),
-        },
-        s1 = LoadSound("snd/positive1.ogg"),
-        s2 = LoadSound("snd/positive2.ogg"),
-        s3 = LoadSound("snd/end.ogg"),
-        s4 = LoadSound("snd/complete.ogg"),
-
         b1 = LoadSound("snd/b1.ogg"),
-        b2 = LoadSound("snd/b2.ogg"),
         b3 = LoadSound("snd/b3.ogg"),
-        b4 = LoadSound("snd/b4.ogg"),
         b5 = LoadSound("snd/b5.ogg"),
-        b6 = LoadSound("snd/b6.ogg"),
-        b7 = LoadSound("snd/b7.ogg"),
 
+        start = LoadSound("snd/start.ogg"),
+        cancel = LoadSound("snd/cancel.ogg"),
+
+        desinEnd = LoadSound("snd/desinEnd.ogg"),
     }
 
     loops = {
         desinLoop = LoadLoop("snd/desinLoop.ogg"),
     }
-
-    sounds.play = {
-        zap = function (pos, vol)
-            sounds.playRandom(sounds.zaps, pos, vol or 1)
-        end,
-    }
-
-    sounds.playRandom = function(soundsTable, pos, vol)
-        local sound = math.floor(soundsTable[rdm(1, #soundsTable)])
-        PlaySound(sound, pos, vol or 1)
-    end
 end
 
 
@@ -292,14 +296,19 @@ function draw()
     -- Draw desin.mode text
     if desin.active() then
         UiPush()
-            UiTranslate(UiCenter(), UiMiddle() + 450)
+            UiTranslate(UiCenter(), UiMiddle() + 470)
             UiColor(1,1,1,1)
             UiFont('bold.ttf', 32)
             UiAlign('center middle')
             -- UiText('Mode: ' .. desin.mode)
             UiTextShadow(0,0,0,0.8,2,0.2)
-            UiText('Mode: ' .. desin.mode)
+            UiText('mode: ' .. desin.mode)
         UiPop()
     end
 
+end
+
+
+function updateGameTable()
+    game = { ppos = GetPlayerTransform().pos }
 end

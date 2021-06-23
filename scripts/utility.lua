@@ -100,7 +100,10 @@
         return edges
     end
     function AabbDimensions(min, max) return Vec(max[1] - min[1], max[2] - min[2], max[3] - min[3]) end
-
+    function AabbGetShapeCenterPos(shape)
+        local mi, ma = GetShapeBounds(shape)
+        return VecLerp(mi,ma,0.5)
+    end
 
 
 
