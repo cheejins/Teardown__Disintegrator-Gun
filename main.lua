@@ -1,10 +1,10 @@
-#include "scripts/desintigrator.lua"
+#include "scripts/desintegrator.lua"
 
 function init()
-    initDesintigrator()
+    initDesintegrator()
 end
 
 function tick()
-    runDesintigrator()
+    shootDesintegrator()
+    desintegrateShapes()
 end
-
