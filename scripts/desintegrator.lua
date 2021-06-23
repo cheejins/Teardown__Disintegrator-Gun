@@ -48,9 +48,14 @@ function buildDesinObject(shape)
     desinObject.shape = shape
     desinObject.body = GetShapeBody(shape)
 
+    desinObject.modes = {specific = 'specific', general = 'general'}
+    desinObject.mode = desinObject.modes[1]
+
+
     local sx,sy,sz = GetShapeSize(shape)
 
     desinObject.properties = {
+        color = Vec(0,1,0.6),
         holeSize = 0.2,
         shapeSize = sx+sy+sz,
         tooSmall = false, -- Shape too small = remove shape.
@@ -61,14 +66,16 @@ function buildDesinObject(shape)
         desintegratePoint = function(pos)
             local hs = desinObject.properties.holeSize
             MakeHole(pos, hs, hs, hs, hs)
-            PointLight(pos, 0, 1, 0.4, 0.1)
+
+            local c = desinObject.properties.color
+            PointLight(pos, c[1], c[2], c[3], 0.15)
         end,
 
         setRandomDesintegrationPosition = function(table, index, bbMin, bbMax) -- Random pos inside aabb
             table[index] = Vec(
-                math.random(bbMin[1], bbMax[1]) + math.random(),
-                math.random(bbMin[2], bbMax[2]) + math.random(),
-                math.random(bbMin[3], bbMax[3]) + math.random())
+                math.random(bbMin[1], bbMax[1]) + math.random() - math.random(),
+                math.random(bbMin[2], bbMax[2]) + math.random() - math.random(),
+                math.random(bbMin[3], bbMax[3]) + math.random() - math.random())
         end,
 
         isShapeTooSmall = function()
@@ -77,10 +84,8 @@ function buildDesinObject(shape)
         end,
 
         updateDesinObject = function()
-
             local sx,sy,sz = GetShapeSize(shape)
             desinObject.properties.shapeSize = sx+sy+sz
-
         end,
     }
 
@@ -117,8 +122,6 @@ function buildDesinObject(shape)
 
             local pos = desinObject.spread.positions[i]
 
-            desinObject.functions.desintegratePoint(pos) -- Actual desintegration.
-
             -- Set source positions.
             local rcDist = desinObject.properties.holeSize * 4
             local rcHit, rcHitPos, n, rcShape = QueryClosestPoint(desinObject.spread.positions[i], rcDist)
@@ -131,8 +134,13 @@ function buildDesinObject(shape)
 
                 else
 
-                    local rdmVec = Vec(math.random()/100 - math.random()/100,math.random()/100 - math.random()/100,math.random()/100 - math.random()/100)
+                    local rdmVec = Vec(
+                        math.random()/90 - math.random()/90,
+                        math.random()/90 - math.random()/90,
+                        math.random()/90 - math.random()/90)
+
                     desinObject.spread.positions[i] = VecAdd(rcHitPos, rdmVec) -- Set new spread position at closest point.
+
                     table.insert(desinObject.hit.positions, rcHitPos) -- Draws dots only at hit points.
 
                 end
@@ -140,6 +148,8 @@ function buildDesinObject(shape)
             else
                 desinObject.functions.setRandomDesintegrationPosition(desinObject.spread.positions, i, sMin, sMax)
             end
+
+            desinObject.functions.desintegratePoint(pos) -- Actual desintegration.
 
         end
 
