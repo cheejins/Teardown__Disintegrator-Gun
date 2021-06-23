@@ -172,7 +172,7 @@ function initDesintegrator()
                 shapeIsValid = false
                 desin.remove.shape(desin.objects[i].shape) -- Remove shape.
 
-                PlaySound(sounds.b5, game.ppos)
+                PlaySound(sounds.removeShape, game.ppos)
 
                 if db then DebugPrint('Shape invalid' .. sfnTime()) end
                 break -- Reject invalid desin object.
@@ -182,7 +182,7 @@ function initDesintegrator()
 
         if shapeIsValid then
             desin.insert.shape(shape)
-            PlaySound(sounds.b1, game.ppos)
+            PlaySound(sounds.insertShape, game.ppos)
         end
     end
 
@@ -228,24 +228,23 @@ function shootDesintegrator()
 
         if desin.input.didSelect() then -- desin shoot
 
+            if desin.mode == desin.modes.specific then
 
-                if desin.mode == desin.modes.specific then
+                desin.insert.processShape(hitShape)
 
-                    desin.insert.processShape(hitShape)
+            elseif desin.mode == desin.modes.general then
 
-                elseif desin.mode == desin.modes.general then
+                desin.insert.body(hitShape, hitBody)
 
-                    desin.insert.body(hitShape, hitBody)
-
-                -- elseif desin.mode == desin.modes.autoSpread then
-                end
+            -- elseif desin.mode == desin.modes.autoSpread then
+            end
 
 
         elseif desin.input.didReset() then -- desin reset
 
             desin.objects = {}
             desin.isDesintegrating = false
-            PlaySound(sounds.b3, game.ppos, 1)
+            PlaySound(sounds.reset, game.ppos, 1)
             if db then DebugWatch('Desin objects reset', sfnTime()) end
 
         end
@@ -258,9 +257,10 @@ end
 
 function initSounds()
     sounds = {
-        b1 = LoadSound("snd/b1.ogg"),
-        b3 = LoadSound("snd/b3.ogg"),
-        b5 = LoadSound("snd/b5.ogg"),
+
+        insertShape = LoadSound("snd/insertShape.ogg"),
+        reset = LoadSound("snd/reset.ogg"),
+        removeShape = LoadSound("snd/removeShape.ogg"),
 
         start = LoadSound("snd/start.ogg"),
         cancel = LoadSound("snd/cancel.ogg"),
