@@ -20,6 +20,8 @@ function desintegrateShapes()
     if desin.isDesintegrating then
         for i = 1, #desin.objects do
             desintegrateShape(desin.objects[i])
+            local pos = GetShapeWorldTransform(desin.objects[i].shape).pos
+            PlayLoop(loops.desinLoop, pos, 0.5)
         end
     end
 

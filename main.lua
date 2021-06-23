@@ -73,6 +73,13 @@ function initDesintegrator()
     desin.manageIsDesintegrating = function()
         if desin.input.didToggleDesintegrate() then
             desin.isDesintegrating = not desin.isDesintegrating
+
+            if desin.isDesintegrating then
+                PlaySound(sounds.b6, GetPlayerTransform().pos, 0.75)
+            else
+                PlaySound(sounds.b5, GetPlayerTransform().pos, 0.75)
+            end
+
         end
     end
 
@@ -134,7 +141,7 @@ function initDesintegrator()
         if db then DebugPrint('Shape added ' .. sfnTime()) end
     end
 
-    desin.insert.validShape = function(shape)
+    desin.insert.processShape = function(shape)
 
         local shapeIsValid = true -- Choose whether to add raycasted object to desin.objects.
 
@@ -145,27 +152,32 @@ function initDesintegrator()
                 shapeIsValid = false
                 desin.remove.shape(desin.objects[i].shape) -- Remove shape.
 
+                PlaySound(sounds.b5, GetPlayerTransform().pos)
+
                 if db then DebugPrint('Shape invalid' .. sfnTime()) end
                 break -- Reject invalid desin object.
             end
 
         end
 
-        if shapeIsValid then 
-            desin.insert.shape(shape) 
+        if shapeIsValid then
+            desin.insert.shape(shape)
+            PlaySound(sounds.b1, GetPlayerTransform().pos)
         end
     end
 
-    desin.insert.body = function(body)
+    desin.insert.body = function(shape, body)
         local bodyIsValid = body ~= globalBody
 
         if bodyIsValid then
 
-            local bodyShapes = GetBodyShapes(hitBody)
+            local bodyShapes = GetBodyShapes(body)
             for i = 1, #bodyShapes do
-                desin.insert.validShape(bodyShapes[i])
+                desin.insert.processShape(bodyShapes[i])
             end
 
+        else
+            desin.insert.processShape(shape) -- Insert hit shape by default regardless of body shapes.
         end
     end
 
@@ -175,7 +187,6 @@ function initDesintegrator()
         for i = 1, #desin.objects do
             if desin.objects[i].shape == shape then
                 table.remove(desin.objects, i)
-                beep()
             end
         end
     end
@@ -193,12 +204,11 @@ function shootDesintegrator()
 
             if desin.mode == desin.modes.specific then
 
-                desin.insert.validShape(hitShape)
+                desin.insert.processShape(hitShape)
 
             elseif desin.mode == desin.modes.general then
 
-                desin.insert.validShape(hitShape) -- Insert hit shape by default regardless of body shapes.
-                desin.insert.body(hitBody)
+                desin.insert.body(hitShape, hitBody)
 
             -- elseif desin.mode == desin.modes.autoSpread then
             end
@@ -209,6 +219,7 @@ function shootDesintegrator()
 
         desin.objects = {}
         desin.isDesintegrating = false
+        PlaySound(sounds.b3, GetPlayerTransform().pos, 1)
         if db then DebugWatch('Desin objects reset', sfnTime()) end
 
     end
@@ -227,6 +238,23 @@ function initSounds()
             LoadSound("snd/zap6.ogg"),
             LoadSound("snd/zap7.ogg"),
         },
+        s1 = LoadSound("snd/positive1.ogg"),
+        s2 = LoadSound("snd/positive2.ogg"),
+        s3 = LoadSound("snd/end.ogg"),
+        s4 = LoadSound("snd/complete.ogg"),
+
+        b1 = LoadSound("snd/b1.ogg"),
+        b2 = LoadSound("snd/b2.ogg"),
+        b3 = LoadSound("snd/b3.ogg"),
+        b4 = LoadSound("snd/b4.ogg"),
+        b5 = LoadSound("snd/b5.ogg"),
+        b6 = LoadSound("snd/b6.ogg"),
+        b7 = LoadSound("snd/b7.ogg"),
+
+    }
+
+    loops = {
+        desinLoop = LoadLoop("snd/desinLoop.ogg"),
     }
 
     sounds.play = {
@@ -261,13 +289,15 @@ function draw()
         end
     end
 
-
     -- Draw desin.mode text
     if desin.active() then
         UiPush()
-            UiTranslate(UiCenter(), UiMiddle())
+            UiTranslate(UiCenter(), UiMiddle() + 450)
             UiColor(1,1,1,1)
-            UiFont('regular', 24)
+            UiFont('bold.ttf', 32)
+            UiAlign('center middle')
+            -- UiText('Mode: ' .. desin.mode)
+            UiTextShadow(0,0,0,0.8,2,0.2)
             UiText('Mode: ' .. desin.mode)
         UiPop()
     end
