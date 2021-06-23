@@ -22,6 +22,13 @@ function tick()
     desin.manageMode()
     if db then DebugWatch('Desin mode', desin.mode) end
 
+    desin.manageIsDesintegrating()
+    if db then DebugWatch('desin.isDesintegrating', desin.isDesintegrating) end
+
+    desin.manageColor()
+
+    desin.manageOutline()
+
 end
 
 
@@ -40,9 +47,9 @@ function initDesintegrator()
     end
 
     desin.input = {
-        didShoot = function() return InputPressed('lmb') and desin.active() end,
-        didReset = function() return InputPressed('rmb') and desin.active() end,
-        didRemove = function() return InputPressed('r') and desin.active() end,
+        didSelect = function() return InputPressed('lmb') and desin.active() end,
+        didToggleDesintegrate = function() return InputPressed('rmb') and desin.active() end,
+        didReset = function() return InputPressed('r') and desin.active() end,
         didChangeMode = function() return InputPressed('c') and desin.active() end,
     }
 
@@ -58,6 +65,44 @@ function initDesintegrator()
 
     desin.objects = {}
     desinObjectMetatable = buildDesinObject(nil)
+
+
+
+    desin.isDesintegrating = false
+
+    desin.manageIsDesintegrating = function()
+        if desin.input.didToggleDesintegrate() then
+            desin.isDesintegrating = not desin.isDesintegrating
+        end
+    end
+
+
+
+    desin.colors = {
+        desintegrating = Vec(0,1,0.6),
+        notDesintegrating = Vec(0.6,1,0)
+    }
+
+    desin.color = desin.colors.notDesintegrating
+
+    desin.manageColor = function()
+        if desin.isDesintegrating then
+            desin.color = desin.colors.desintegrating
+            return
+        end
+        desin.color = desin.colors.notDesintegrating
+    end
+
+
+
+    desin.manageOutline = function()
+        local c = desin.color
+        for i = 1, #desin.objects do
+            DrawShapeOutline(desin.objects[i].shape, c[1], c[2], c[3], 1)
+        end
+    end
+
+
 
     desin.modes = {
         specific = 'specific', -- shapes
@@ -94,13 +139,21 @@ function initDesintegrator()
         local shapeIsValid = true -- Choose whether to add raycasted object to desin.objects.
 
         for i = 1, #desin.objects do -- Check if shape is already in desin.objects.
+
             if shape == desin.objects[i].shape then
+
                 shapeIsValid = false
+                desin.remove.shape(desin.objects[i].shape) -- Remove shape.
+
                 if db then DebugPrint('Shape invalid' .. sfnTime()) end
                 break -- Reject invalid desin object.
             end
+
         end
-        if shapeIsValid then desin.insert.shape(shape) end
+
+        if shapeIsValid then 
+            desin.insert.shape(shape) 
+        end
     end
 
     desin.insert.body = function(body)
@@ -116,12 +169,23 @@ function initDesintegrator()
         end
     end
 
+
+    desin.remove = {}
+    desin.remove.shape = function(shape)
+        for i = 1, #desin.objects do
+            if desin.objects[i].shape == shape then
+                table.remove(desin.objects, i)
+                beep()
+            end
+        end
+    end
+
 end
 
 
 function shootDesintegrator()
 
-    if desin.input.didShoot() then -- desin shoot
+    if desin.input.didSelect() then -- desin shoot
 
         local camTr = GetCameraTransform()
         local hit, hitPos, hitShape, hitBody = RaycastFromTransform(camTr, 200)
@@ -144,6 +208,7 @@ function shootDesintegrator()
     elseif desin.input.didReset() then -- desin reset
 
         desin.objects = {}
+        desin.isDesintegrating = false
         if db then DebugWatch('Desin objects reset', sfnTime()) end
 
     end
@@ -180,28 +245,30 @@ end
 function draw()
 
     -- Draw dots at hit positions.
-    for i = 1, #desin.objects do
-        for j = 1, #desin.objects[i].hit.positions do
-            DrawDot(
-                desin.objects[i].hit.positions[j],
-                math.random()/7.5,
-                math.random()/7.5,
-                desin.objects[i].properties.color[1],
-                desin.objects[i].properties.color[2],
-                desin.objects[i].properties.color[3],
-                math.random()/2 + 0.25
-            )
+    if desin.isDesintegrating then
+        for i = 1, #desin.objects do
+            for j = 1, #desin.objects[i].hit.positions do
+                DrawDot(
+                    desin.objects[i].hit.positions[j],
+                    math.random()/5,
+                    math.random()/5,
+                    desin.colors.desintegrating[1],
+                    desin.colors.desintegrating[2],
+                    desin.colors.desintegrating[3],
+                    math.random()/2 + 0.4
+                )
+            end
         end
     end
 
 
     -- Draw desin.mode text
-    if desin.active then
+    if desin.active() then
         UiPush()
-            UiTranslate(UiCenter(),UiMiddle()+300)
+            UiTranslate(UiCenter(), UiMiddle())
             UiColor(1,1,1,1)
             UiFont('regular', 24)
-            -- UiText('Mode: ' .. desin.mode)
+            UiText('Mode: ' .. desin.mode)
         UiPop()
     end
 

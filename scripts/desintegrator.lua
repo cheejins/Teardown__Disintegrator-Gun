@@ -17,9 +17,12 @@ function desintegrateShapes()
     end
 
 
-    for i = 1, #desin.objects do
-        desintegrateShape(desin.objects[i])
+    if desin.isDesintegrating then
+        for i = 1, #desin.objects do
+            desintegrateShape(desin.objects[i])
+        end
     end
+
 
     if db then DebugWatch('Desintegrating shapes', sfnTime()) end
     if db then DebugWatch('Desin shapes count', #desin.objects) end
@@ -51,11 +54,10 @@ function buildDesinObject(shape)
     local sx,sy,sz = GetShapeSize(shape)
 
     desinObject.properties = {
-        color = Vec(0,1,0.6),
         holeSize = 0.2,
         shapeSize = (sx+sy+sz),
         tooSmall = false, -- Shape too small = remove shape.
-        maxPoints = 30
+        maxPoints = 25
     }
 
     desinObject.functions = {
@@ -64,8 +66,8 @@ function buildDesinObject(shape)
             local hs = desinObject.properties.holeSize
             MakeHole(pos, hs, hs, hs, hs)
 
-            local c = desinObject.properties.color
-            PointLight(pos, c[1], c[2], c[3], 0.15)
+            local c = desin.colors.desintegrating
+            PointLight(pos, c[1], c[2], c[3], 0.2)
         end,
 
         setRandomDesintegrationPosition = function(table, index, bbMin, bbMax) -- Random pos inside aabb
@@ -106,12 +108,10 @@ function buildDesinObject(shape)
         desinObject.functions.updateDesinObject()
 
         local sMin, sMax = GetShapeBounds(desinObject.shape)
-        DrawShapeOutline(desinObject.shape, 0, 1, 0.5, 0.35)
 
         -- Set number of desintegration points.
         desinObject.spread.points = math.floor((sx+sy+sz)/10) + 1
         if db then DebugWatch('desinObject shapeSize', desinObject.spread.points) end
-
 
         desinObject.hit.positions = {} -- Reset each step.
 
@@ -147,9 +147,7 @@ function buildDesinObject(shape)
             end
 
             desinObject.functions.desintegratePoint(pos) -- Actual desintegration.
-
         end
-
     end
 
 
