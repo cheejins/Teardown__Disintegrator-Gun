@@ -48,17 +48,14 @@ function buildDesinObject(shape)
     desinObject.shape = shape
     desinObject.body = GetShapeBody(shape)
 
-    desinObject.modes = {specific = 'specific', general = 'general'}
-    desinObject.mode = desinObject.modes[1]
-
-
     local sx,sy,sz = GetShapeSize(shape)
 
     desinObject.properties = {
         color = Vec(0,1,0.6),
         holeSize = 0.2,
-        shapeSize = sx+sy+sz,
+        shapeSize = (sx+sy+sz),
         tooSmall = false, -- Shape too small = remove shape.
+        maxPoints = 30
     }
 
     desinObject.functions = {
@@ -85,7 +82,7 @@ function buildDesinObject(shape)
 
         updateDesinObject = function()
             local sx,sy,sz = GetShapeSize(shape)
-            desinObject.properties.shapeSize = sx+sy+sz
+            desinObject.properties.shapeSize = (sx+sy+sz)
         end,
     }
 
@@ -161,18 +158,19 @@ function buildDesinObject(shape)
         -- Set number of desintegration points.
         local sMin, sMax = GetShapeBounds(desinObject.shape)
         local sx,sy,sz = GetShapeSize(shape)
-        desinObject.start.points = math.floor((sx+sy+sz)/10) + 1
+        desinObject.start.points = math.floor((sx+sy+sz)/15) + 1
 
         -- Limit number of points for performance.
-        if desinObject.start.points > 40 then
-            desinObject.start.points = 40
+        if desinObject.start.points > desinObject.properties.maxPoints then
+            desinObject.start.points = desinObject.properties.maxPoints
         end
-        if db then DebugWatch('desinObject.start.points', desinObject.start.points) end
 
         for i = 1, desinObject.start.points do -- Set starting spread positions.
             local position = desinObject.functions.setRandomDesintegrationPosition(desinObject.spread.positions, i, sMin, sMax)
             table.insert(desinObject.spread.positions, position)
         end
+
+        if db then DebugWatch('desinObject.start.points', desinObject.start.points) end
 
     end
 

@@ -15,17 +15,19 @@ end
 
 
 function tick()
+
     shootDesintegrator()
     desintegrateShapes()
+
+    desin.manageMode()
+    if db then DebugWatch('Desin mode', desin.mode) end
+
 end
 
 
 function initDesintegrator()
 
     desin = {}
-
-    desin.objects = {}
-    desinObjectMetatable = buildDesinObject(nil)
 
     desin.setup = {
         name = 'desintegrator',
@@ -39,8 +41,9 @@ function initDesintegrator()
 
     desin.input = {
         didShoot = function() return InputPressed('lmb') and desin.active() end,
-        didReset = function() return InputPressed('r') and desin.active() end,
-        didRemove = function() return InputPressed('rmb') and desin.active() end,
+        didReset = function() return InputPressed('rmb') and desin.active() end,
+        didRemove = function() return InputPressed('r') and desin.active() end,
+        didChangeMode = function() return InputPressed('c') and desin.active() end,
     }
 
     desin.initTool = function(enabled)
@@ -52,7 +55,33 @@ function initDesintegrator()
     desin.initTool()
 
 
+
+    desin.objects = {}
+    desinObjectMetatable = buildDesinObject(nil)
+
+    desin.modes = {
+        specific = 'specific', -- shapes
+        general = 'general', -- bodies
+        -- autoSpread = 'autoSpread', -- bodies
+    }
+
+    desin.mode = desin.modes.specific
+
+    desin.manageMode = function()
+        if desin.input.didChangeMode() then
+            beep()
+            if desin.mode == desin.modes.specific then
+                desin.mode = desin.modes.general
+            else
+                desin.mode = desin.modes.specific
+            end
+        end
+    end
+
+
+
     desin.insert = {}
+
     desin.insert.shape = function(shape)
         local desinObject = buildDesinObject(shape) -- Insert valid desin object.
         setmetatable(desinObject, desinObjectMetatable)
@@ -60,51 +89,59 @@ function initDesintegrator()
         if db then DebugPrint('Shape added ' .. sfnTime()) end
     end
 
+    desin.insert.validShape = function(shape)
+
+        local shapeIsValid = true -- Choose whether to add raycasted object to desin.objects.
+
+        for i = 1, #desin.objects do -- Check if shape is already in desin.objects.
+            if shape == desin.objects[i].shape then
+                shapeIsValid = false
+                if db then DebugPrint('Shape invalid' .. sfnTime()) end
+                break -- Reject invalid desin object.
+            end
+        end
+        if shapeIsValid then desin.insert.shape(shape) end
+    end
+
+    desin.insert.body = function(body)
+        local bodyIsValid = body ~= globalBody
+
+        if bodyIsValid then
+
+            local bodyShapes = GetBodyShapes(hitBody)
+            for i = 1, #bodyShapes do
+                desin.insert.validShape(bodyShapes[i])
+            end
+
+        end
+    end
 
 end
 
 
 function shootDesintegrator()
 
-    if desin.input.didShoot() then
-
-
-
-        -- fine = shape
-        -- general = body
-
-
-
+    if desin.input.didShoot() then -- desin shoot
 
         local camTr = GetCameraTransform()
-        local hit, hitPos, hitShape = RaycastFromTransform(camTr, 200)
+        local hit, hitPos, hitShape, hitBody = RaycastFromTransform(camTr, 200)
         if hit then
 
+            if desin.mode == desin.modes.specific then
 
+                desin.insert.validShape(hitShape)
 
-            local shapeIsValid = true -- Choose whether to add raycasted object to desin.objects.
+            elseif desin.mode == desin.modes.general then
 
+                desin.insert.validShape(hitShape) -- Insert hit shape by default regardless of body shapes.
+                desin.insert.body(hitBody)
 
-            -- Check if shape is already in desin.objects.
-            for i = 1, #desin.objects do
-                if hitShape == desin.objects[i].shape then
-                    shapeIsValid = false
-                    if db then DebugPrint('Shape invalid' .. sfnTime()) end
-                    break -- Reject invalid desin object.
-                end
-            end
-
-            if shapeIsValid then
-                desin.insert.shape(hitShape)
+            -- elseif desin.mode == desin.modes.autoSpread then
             end
 
         end
 
-
-
-
-
-    elseif desin.input.didReset() then
+    elseif desin.input.didReset() then -- desin reset
 
         desin.objects = {}
         if db then DebugWatch('Desin objects reset', sfnTime()) end
@@ -141,6 +178,7 @@ end
 
 
 function draw()
+
     -- Draw dots at hit positions.
     for i = 1, #desin.objects do
         for j = 1, #desin.objects[i].hit.positions do
@@ -155,4 +193,16 @@ function draw()
             )
         end
     end
+
+
+    -- Draw desin.mode text
+    if desin.active then
+        UiPush()
+            UiTranslate(UiCenter(),UiMiddle()+300)
+            UiColor(1,1,1,1)
+            UiFont('regular', 24)
+            -- UiText('Mode: ' .. desin.mode)
+        UiPop()
+    end
+
 end
