@@ -1,6 +1,7 @@
 <h1 align="center"> Desintigrator Gun (Teardown Mod) </h1>
 <p align="center">A weapon that disintigrates shapes (objects) bit by bit.</p>
-
+<br>
+<p align="center">A desintegration step is called each frame only when the desintegration mode is toggled on. Each object has its own list of desintegration positions that spread once those positions (querying the closest point to the desintegrated position) have been desintegrated. This makes for a satisfying, termite like tunneling destruction.</p>
 <br>
 
 ## Media
