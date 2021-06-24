@@ -6,6 +6,7 @@
 -- (Debug mode)
 -- db = false
 db = true
+-- dbw = function(func)  end
 
 
 function init()
@@ -36,6 +37,8 @@ function tick()
         desin.manageColor()
         desin.manageOutline()
 
+        desin.manageToolAnimation()
+
     end
 
 end
@@ -51,7 +54,7 @@ function initDesintegrator()
         voxPath = 'MOD/vox/desintegrator.vox',
     }
 
-    desin.active = function()
+    desin.active = function() -- Player is wielding the desintegrator.
         return GetString('game.player.tool') == desin.setup.name and GetPlayerVehicle() == 0
     end
 
@@ -252,6 +255,45 @@ function initDesintegrator()
     desin.setObjectToBeRemoved = function(desinObject)
         desinObject.remove = true
     end
+
+
+
+    desin.manageToolAnimation = function()
+
+        if desin.active() then
+
+            local toolShapes = GetBodyShapes(GetToolBody())
+            local toolPos = Vec(0.6,-0.5,-0.4) -- Base tool pos
+
+            if db then DebugWatch('#toolShapes', #toolShapes) end
+
+
+            local toolUsing = nil
+            local toolNotUsing = nil
+
+            if desin.isDesintegrating then 
+                toolUsing = toolShapes[1]
+                toolNotUsing = toolShapes[2]
+            else
+                toolUsing = toolShapes[2]
+                toolNotUsing = toolShapes[1]
+            end
+
+
+            -- Set tool transforms
+            local toolRot = GetShapeLocalTransform(toolShapes[1]).rot
+
+            local toolTr = Transform(toolPos, toolRot)
+            SetShapeLocalTransform(toolUsing, toolTr)
+
+            local toolTr = Transform(Vec(0,1000,0), toolRot)
+            SetShapeLocalTransform(toolNotUsing, toolTr)
+
+
+        end
+
+    end
+
 
 
 end
