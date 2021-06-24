@@ -84,9 +84,9 @@ function initDesintegrator()
             desin.isDesintegrating = not desin.isDesintegrating
 
             if desin.isDesintegrating then
-                PlaySound(sounds.cancel, game.ppos, 0.4)
+                sound.ui.activate()
             else
-                PlaySound(sounds.start, game.ppos, 0.2)
+                sound.ui.deactivate()
             end
 
         end
@@ -120,17 +120,8 @@ function initDesintegrator()
         if isDesin then a = 0.5 end
 
         for i = 1, #desin.objects do
-
             local shape = desin.objects[i].shape
-
             DrawShapeOutline(shape, c[1], c[2], c[3], a)
-
-            -- if not isDesin then
-            --     local mi, ma = GetShapeBounds(shape)
-            --     local qShapes = QueryAabbShapes(mi, ma)
-            --     AabbDraw(mi, ma, c[1], c[2], c[3], a)
-            -- end
-
         end
     end
 
@@ -175,20 +166,26 @@ function initDesintegrator()
             if shape == desin.objects[i].shape then
 
                 shapeIsValid = false
-                desin.remove.shape(desin.objects[i].shape) -- Remove shape.
+                desin.setObjectToBeRemoved(desin.objects[i]) -- Remove shape.
 
-                PlaySound(sounds.removeShape, game.ppos)
+                -- sound.desintegrate.done(AabbGetShapeCenterPos(desin.objects[i].shape))
 
-                if db then DebugPrint('Shape invalid' .. sfnTime()) end
+                sound.ui.removeShape()
+
+                if db then DebugPrint('Man removed object ' .. sfnTime()) end
                 break -- Reject invalid desin object.
+
             end
 
         end
 
         if shapeIsValid then
+
             desin.insert.shape(shape)
-            PlaySound(sounds.insertShape, game.ppos)
+            sound.ui.insert()
+
         end
+
     end
 
     desin.insert.body = function(shape, body)
@@ -207,17 +204,46 @@ function initDesintegrator()
     end
 
 
-    desin.remove = {}
-    desin.remove.shape = function(shape)
-        local indexesToRemove = {}
+    -- desin.remove = {}
+    -- desin.remove.shape = function(shape)
+    --     local indexesToRemove = {}
+    --     for i = 1, #desin.objects do
+    --         if desin.objects[i].shape == shape then
+    --             table.insert(indexesToRemove, i)
+    --         end
+    --     end
+    --     for i = 1, #indexesToRemove do
+    --         table.remove(desin.objects, indexesToRemove[i])
+    --     end
+    -- end
+
+
+    desin.setObjectToBeRemoved = function(desinObject)
+        desinObject.remove = true
+    end
+
+
+    desin.manageObjectRemoval = function()
+
+        -- Remove small specified desin objects.
+        local removeIndexes = {}
         for i = 1, #desin.objects do
-            if desin.objects[i].shape == shape then
-                table.insert(indexesToRemove, i)
+
+            local desinObjectRemove = desin.objects[i].functions.isShapeTooSmall() or desin.objects[i].remove
+
+            if desinObjectRemove then
+
+                table.insert(removeIndexes, i)
+                if db then DebugPrint('Auto removed object ' .. sfnTime()) end
+
             end
+
         end
 
-        for i = 1, #indexesToRemove do
-            table.remove(desin.objects, indexesToRemove[i])
+        for i = 1, #removeIndexes do
+
+            table.remove(desin.objects, removeIndexes[i]) -- Remove objects safely.
+
         end
 
     end
@@ -249,7 +275,9 @@ function shootDesintegrator()
 
             desin.objects = {}
             desin.isDesintegrating = false
-            PlaySound(sounds.reset, game.ppos, 1)
+
+            sound.ui.reset()
+
             if db then DebugWatch('Desin objects reset', sfnTime()) end
 
         end
@@ -275,6 +303,49 @@ function initSounds()
     loops = {
         desinLoop = LoadLoop("snd/desinLoop.ogg"),
     }
+
+    sound = {
+
+        desintegrate = {
+
+            loop = function(pos)
+                PlayLoop(loops.desinLoop, pos, 0.6) -- Desintigrate sound.
+                PlayLoop(loops.desinLoop, game.ppos, 0.1)
+            end,
+
+            done = function(pos)
+                PlaySound(sounds.desinEnd, pos, 0.5)
+            end,
+
+        },
+
+        ui = {
+
+            insert = function()
+                PlaySound(sounds.insertShape, game.ppos, 0.8)
+            end,
+
+            removeShape = function()
+                PlaySound(sounds.removeShape, game.ppos, 0.9)
+            end,
+
+            reset = function ()
+                PlaySound(sounds.reset, game.ppos, 1)
+            end,
+
+            activate = function ()
+                PlaySound(sounds.cancel, game.ppos, 0.25)
+            end,
+
+            deactivate = function ()
+                PlaySound(sounds.start, game.ppos, 0.2)
+            end,
+
+        }
+
+
+    }
+
 end
 
 

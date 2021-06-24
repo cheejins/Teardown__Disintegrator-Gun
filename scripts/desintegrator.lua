@@ -4,19 +4,7 @@
 
 function desintegrateShapes()
 
-    -- Remove small (finished) desin objects.
-    local removeIndexes = {}
-    for i = 1, #desin.objects do
-        if desin.objects[i].functions.isShapeTooSmall() then
-            table.insert(removeIndexes, i)
-            if db then DebugPrint('desin obj removed ' .. sfnTime()) end
-        end
-    end
-    for i = 1, #removeIndexes do
-        PlaySound(sounds.desinEnd, AabbGetShapeCenterPos(desin.objects[removeIndexes[i]].shape), 0.5)
-        table.remove(desin.objects, removeIndexes[i]) -- Remove objects safely.
-    end
-
+    desin.manageObjectRemoval()
 
     -- Desintigrate shapes.
     if desin.isDesintegrating then
@@ -24,11 +12,8 @@ function desintegrateShapes()
 
             desintegrateShape(desin.objects[i])
 
-            PlayLoop(loops.desinLoop, AabbGetShapeCenterPos(desin.objects[i].shape), 0.6) -- Desintigrate sound.
-            PlayLoop(loops.desinLoop, game.ppos, 0.1)
         end
     end
-
 
     if db then DebugWatch('Desintegrating shapes', sfnTime()) end
     if db then DebugWatch('Desin shapes count', #desin.objects) end
@@ -42,8 +27,12 @@ function desintegrateShape(desinObject)
         desinObject.start.desintegrationStep()
         desinObject.start.done = true
         if db then DebugWatch('Desintegrating start done', sfnTime()) end
+
     else
+
         desinObject.spread.desintegrationStep()
+        sound.desintegrate.loop(AabbGetShapeCenterPos(desinObject.shape))
+
     end
 
 end
@@ -56,6 +45,7 @@ function buildDesinObject(shape)
 
     desinObject.shape = shape
     desinObject.body = GetShapeBody(shape)
+    desinObject.remove = false
 
     local sx,sy,sz = GetShapeSize(shape)
 
