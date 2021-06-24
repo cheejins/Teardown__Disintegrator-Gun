@@ -113,16 +113,16 @@ function buildDesinObject(shape)
 
         for i = 1, #desinObject.spread.positions do -- Process desintegration step.
 
-            -- Reject all other shapes.
-            local queriedShapes = QueryAabbShapes(sMin, sMax)
-            for i = 1, #queriedShapes do
+            -- -- Reject all other shapes.
+            -- local queriedShapes = QueryAabbShapes(sMin, sMax)
+            -- for i = 1, #queriedShapes do
 
-                local shape = queriedShapes[i]
-                if shape ~= desinObject.shape then
-                    QueryRejectShape(queriedShapes[i])
-                end
+            --     local shape = queriedShapes[i]
+            --     if shape ~= desinObject.shape then
+            --         QueryRejectShape(queriedShapes[i])
+            --     end
 
-            end
+            -- end
 
             -- Set spread positions.
             local rcDist = desinObject.properties.holeSize * 4

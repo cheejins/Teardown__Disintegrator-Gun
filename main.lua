@@ -164,6 +164,8 @@ function initDesintegrator()
 
     desin.insert.processShape = function(shape)
 
+        local shapeBody = GetShapeBody(shape)
+
         local shapeIsValid = true -- Choose whether to add shape to desin.objects.
 
         for i = 1, #desin.objects do -- Check if shape is in desin.objects.
@@ -174,8 +176,11 @@ function initDesintegrator()
 
                 if desin.mode == desin.modes.general then -- Desin mode general. Remove all shapes in body.
 
-                    local shapeBody = GetShapeBody(shape)
-                    if shapeBody ~= globalBody then -- Not global body.
+                    if shapeBody == globalBody then -- Not global body.
+
+                        desin.setObjectToBeRemoved(desin.objects[i])
+
+                    else
 
                         local bodyShapes = GetBodyShapes(shapeBody)
                         dbp('#bodyShapes ' .. #bodyShapes)
