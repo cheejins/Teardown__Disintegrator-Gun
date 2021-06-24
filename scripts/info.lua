@@ -40,7 +40,7 @@ function manageInfoUi()
             UiPush()
                 UiTranslate(UiCenter(), UiMiddle())
                 UiAlign("center middle")
-                UiImageBox('MOD/img/info.png', 500, 500, 1, 1)
+                UiImageBox('MOD/img/info.png', 940*0.8, 700*0.8, 1, 1)
             UiPop()
 
         end

@@ -49,11 +49,11 @@ function buildDesinObject(shape)
     local sx,sy,sz = GetShapeSize(shape)
 
     desinObject.properties = {
-        holeSize = 0.22,
+        holeSize = 0.2,
         shapeSize = (sx+sy+sz),
         tooSmall = false, -- Shape too small = remove shape.
-        maxPoints = 25,
-        sizeDiv = 10, -- Sets number of points (shapeSize/sizeDiv)
+        maxPoints = 30,
+        sizeDiv = 15, -- Sets number of points (shapeSize/sizeDiv)
     }
 
     desinObject.functions = {
@@ -63,7 +63,7 @@ function buildDesinObject(shape)
             MakeHole(pos, hs, hs, hs, hs)
 
             local c = desin.colors.desintegrating
-            PointLight(pos, c[1], c[2], c[3], 0.2)
+            PointLight(pos, c[1], c[2], c[3], 0.25)
         end,
 
         setRandomDesintegrationPosition = function(table, index, bbMin, bbMax) -- Random pos inside aabb
@@ -106,7 +106,7 @@ function buildDesinObject(shape)
         local sMin, sMax = GetShapeBounds(desinObject.shape)
 
         -- Set number of desintegration points.
-        desinObject.spread.points = math.floor((sx+sy+sz)/desinObject.properties.sizeDiv) + 1
+        desinObject.spread.points = math.floor((sx+sy+sz)/desinObject.properties.sizeDiv) + 3
         dbw('desinObject shapeSize', desinObject.spread.points)
 
         desinObject.hit.positions = {} -- Reset each step.
@@ -116,12 +116,10 @@ function buildDesinObject(shape)
             -- -- Reject all other shapes.
             -- local queriedShapes = QueryAabbShapes(sMin, sMax)
             -- for i = 1, #queriedShapes do
-
             --     local shape = queriedShapes[i]
             --     if shape ~= desinObject.shape then
             --         QueryRejectShape(queriedShapes[i])
             --     end
-
             -- end
 
             -- Set spread positions.
@@ -162,7 +160,7 @@ function buildDesinObject(shape)
         -- Set number of desintegration points.
         local sMin, sMax = GetShapeBounds(desinObject.shape)
         local sx,sy,sz = GetShapeSize(shape)
-        desinObject.start.points = math.floor((sx+sy+sz)/desinObject.properties.sizeDiv) + 1
+        desinObject.start.points = math.floor((sx+sy+sz)/desinObject.properties.sizeDiv) + 3
 
         -- Limit number of points for performance.
         if desinObject.start.points > desinObject.properties.maxPoints then
