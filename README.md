@@ -1,2 +1,2 @@
 # Teardown-Mod---Desintigrator
-A weapon that disintigrates shapes from the outside inward.
+A weapon that disintigrates shapes bit by bit.
