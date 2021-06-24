@@ -1,4 +1,4 @@
-name = Desintigrator Gun
+name = Desintegrator Gun
 author = Cheejins
 description = Select objects and desintegrate them bit by bit.
 tags = Tool

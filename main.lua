@@ -35,11 +35,11 @@ function tick()
         desin.manageIsDesintegrating()
         dbw('desin.isDesintegrating', desin.isDesintegrating)
 
+        desin.manageObjectRemoval()
+
         desin.manageColor()
         desin.manageOutline()
         desin.manageToolAnimation()
-
-        desin.manageObjectRemoval()
 
     end
 
@@ -161,31 +161,30 @@ function initDesintegrator()
         table.insert(desin.objects, desinObject)
         dbp('Shape added ' .. sfnTime())
     end
+
+
+
     desin.insert.processShape = function(shape)
 
         local shapeBody = GetShapeBody(shape)
+        local shapeWillInsert = true
 
-        local shapeIsValid = true -- Choose whether to add shape to desin.objects.
+        for i = 1, #desin.objects do
 
-        for i = 1, #desin.objects do -- Check if shape is in desin.objects.
+            if shape == desin.objects[i].shape then -- Check if shape is in desin.objects.
 
-            if shape == desin.objects[i].shape then -- Remove shape that's already in desin.objects.
-
-                shapeIsValid = false
+                shapeWillInsert = false -- Remove shape that's already in desin.objects.
 
                 if desin.mode == desin.modes.general then -- Desin mode general. Remove all shapes in body.
 
-                    if shapeBody == globalBody then -- Not global body.
-
-                        desin.setObjectToBeRemoved(desin.objects[i])
-
-                    else
-
+                    -- if shapeBody == globalBody then -- Not global body.
+                    --     desin.setObjectToBeRemoved(desin.objects[i])
+                    -- else
                         local bodyShapes = GetBodyShapes(shapeBody)
                         dbp('#bodyShapes ' .. #bodyShapes)
 
-                        for j = 1, #bodyShapes do -- All body shapes.
-                            for k = 1, #desin.objects do -- Check all body shapes with desin.objects shapes.
+                        for j = 1, #bodyShapes do
+                            for k = 1, #desin.objects do -- Compare body shapes to desin.objects shapes.
 
                                 if bodyShapes[j] == desin.objects[k].shape then -- Body shape is in desin.objects.
                                     desin.setObjectToBeRemoved(desin.objects[k]) -- Mark shape for removal
@@ -194,10 +193,9 @@ function initDesintegrator()
 
                             end
                         end
+                    -- end
 
-                    end
-
-                elseif desin.mode == desin.modes.specific then -- Desin mode specific. Remove single shape.
+                elseif desin.mode == desin.modes.specific then -- Remove single shape.
 
                     desin.setObjectToBeRemoved(desin.objects[i])
                     dbp('Man removed shape ' .. sfnTime())
@@ -208,16 +206,32 @@ function initDesintegrator()
 
         end
 
+
+        -- Check shape not oversized.
+        if GetShapeVoxelCount(shape) > desin.properties.maxShapeVoxels then
+
+            shapeWillInsert = false
+
+            local message = "Object too large! (likely merged with the whole map)"
+            desin.message.insert(message, colors.red)
+
+            sound.ui.invalid()
+            dbp("Oversized shape rejected. Voxels: " .. GetShapeVoxelCount(shape) .. " ... " .. sfnTime())
+
+        end
+
+
         -- Insert valid shape 
-        if shapeIsValid then
+        if shapeWillInsert then
             desin.insert.shape(shape)
             sound.ui.insert()
         else
             sound.ui.removeShape()
         end
 
-
     end
+
+
     desin.insert.body = function(shape, body)
 
         local bodyIsValid = body ~= globalBody
@@ -347,6 +361,64 @@ function initDesintegrator()
 
     end
 
+
+
+    desin.message = {}
+
+    desin.message.message = nil
+    desin.message.color = colors.white
+    desin.message.cancelCount = 0
+
+    desin.message.timer = {
+        time = 0,
+        timeDefault = (60 * GetTimeStep()) * 4, -- * seconds
+    }
+
+    desin.message.insert = function(message, color)
+
+        desin.message.timer.time = desin.message.timer.timeDefault -- Reset message timer.
+        desin.message.color = color
+        desin.message.message = message
+        desin.message.cancelCount = 0 -- Reset cancel flag.
+
+    end
+
+    desin.message.drawText = function ()
+        UiPush()
+            local c = desin.message.color
+            UiColor(c[1], c[2], c[3], 1)
+
+            UiTranslate(UiCenter(), UiMiddle()+400)
+            UiFont('bold.ttf', 32)
+            UiAlign('center middle')
+            UiTextShadow(0,0,0,0.8,2,0.2)
+            UiText(desin.message.message)
+        UiPop()
+    end
+
+    desin.message.draw = function()
+
+        if desin.input.didSelect() then
+            desin.message.cancelCount = desin.message.cancelCount + 1
+        end
+
+        if desin.message.timer.time >= 0 then
+            desin.message.timer.time = desin.message.timer.time - GetTimeStep()
+
+            if desin.message.cancelCount > 1 then -- Check if message has been cancelled.
+
+                desin.message.timer.time = 0 -- Remove message if player shoots again.
+
+            else
+
+                desin.message.drawText()
+
+            end
+        end
+
+        dbw('desin.message.timer.time', desin.message.timer.time)
+    end
+
 end
 
 
@@ -355,7 +427,7 @@ function shootDesintegrator()
     if desin.input.didSelect() then -- Shoot desin
 
         local camTr = GetCameraTransform()
-        local hit, hitPos, hitShape, hitBody = RaycastFromTransform(camTr, 200)
+        local hit, hitPos, hitShape, hitBody = RaycastFromTransform(camTr)
         if hit then
 
             local maxVoxels = desin.properties.maxShapeVoxels
@@ -366,23 +438,7 @@ function shootDesintegrator()
 
             elseif desin.mode == desin.modes.general then
 
-                local hitBodyShapes = GetBodyShapes(hitBody)
-
-                local shapesValid = true
-                for i = 1, #hitBodyShapes do
-
-                    if GetShapeVoxelCount(hitBodyShapes[i]) > maxVoxels then
-                        shapesValid = false
-                        dbp("Oversized shape rejected. Voxels: " .. GetShapeVoxelCount(hitShape) .. " ... " .. sfnTime())
-                    end
-
-                end
-
-                if shapesValid then
-                    desin.insert.body(hitShape, hitBody)
-                else
-                    sound.ui.invalid()
-                end
+                desin.insert.body(hitShape, hitBody)
 
             end
 
@@ -397,7 +453,7 @@ function shootDesintegrator()
 
         dbw('Desin objects reset', sfnTime())
 
-    elseif desin.input.didUndo() and #desin.objects >= 1 then -- Undo last shape insertion
+    elseif desin.input.didUndo() and #desin.objects >= 1 then -- Undo last object insertion (body or shapes)
 
         desin.undo()
 
@@ -476,6 +532,8 @@ function draw()
 
     manageInfoUi()
 
+    desin.message.draw()
+
     -- Draw dots at hit positions.
     if desin.isDesintegrating then
         for i = 1, #desin.objects do
@@ -507,7 +565,6 @@ function draw()
     end
 
 end
-
 
 function updateGameTable()
     game = { ppos = GetPlayerTransform().pos }
