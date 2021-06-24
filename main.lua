@@ -36,8 +36,9 @@ function tick()
 
         desin.manageColor()
         desin.manageOutline()
-
         desin.manageToolAnimation()
+
+        desin.manageObjectRemoval()
 
     end
 
@@ -162,36 +163,59 @@ function initDesintegrator()
 
     desin.insert.processShape = function(shape)
 
-        local shapeIsValid = true -- Choose whether to add raycasted object to desin.objects.
+        local shapeIsValid = true -- Choose whether to add shape to desin.objects.
 
-        for i = 1, #desin.objects do -- Check if shape is already in desin.objects.
+        for i = 1, #desin.objects do -- Check if shape is in desin.objects.
 
-            if shape == desin.objects[i].shape then
+            if shape == desin.objects[i].shape then -- Remove shape that's already in desin.objects.
 
                 shapeIsValid = false
-                desin.setObjectToBeRemoved(desin.objects[i])
 
-                -- sound.desintegrate.done(AabbGetShapeCenterPos(desin.objects[i].shape))
+                if desin.mode == desin.modes.general then -- Desin mode general. Remove all shapes in body.
 
-                sound.ui.removeShape()
+                    local shapeBody = GetShapeBody(shape)
+                    if shapeBody ~= globalBody then -- Not global body.
 
-                if db then DebugPrint('Man removed object ' .. sfnTime()) end
-                break -- Reject invalid desin object.
+                        local bodyShapes = GetBodyShapes(shapeBody)
+                        if db then DebugPrint('#bodyShapes ' .. #bodyShapes) end
+
+                        for j = 1, #bodyShapes do -- All body shapes.
+                            for k = 1, #desin.objects do -- Check all body shapes with desin.objects shapes.
+
+                                if bodyShapes[j] == desin.objects[k].shape then -- Body shape is in desin.objects.
+                                    desin.setObjectToBeRemoved(desin.objects[k]) -- Mark shape for removal
+                                    if db then DebugPrint('Man removed body shape ' .. sfnTime()) end
+                                end
+
+                            end
+                        end
+
+                    end
+
+                elseif desin.mode == desin.modes.specific then -- Desin mode specific. Remove single shape.
+
+                    desin.setObjectToBeRemoved(desin.objects[i])
+                    if db then DebugPrint('Man removed shape ' .. sfnTime()) end
+
+                end
 
             end
 
         end
 
+        -- Insert valid shape 
         if shapeIsValid then
-
             desin.insert.shape(shape)
             sound.ui.insert()
-
+        else
+            sound.ui.removeShape()
         end
+
 
     end
 
     desin.insert.body = function(shape, body)
+
         local bodyIsValid = body ~= globalBody
 
         if bodyIsValid then
@@ -204,50 +228,55 @@ function initDesintegrator()
         else
             desin.insert.processShape(shape) -- Insert hit shape by default regardless of body shapes.
         end
+
     end
 
 
 
     desin.manageObjectRemoval = function()
-
-        -- Remove specified desin objects.
-        local removeIndexes = {}
+        
+        local removeIndexes = {} -- Remove specified desin objects.
+        local removeSound = false
 
         for i = 1, #desin.objects do
 
-            local removeSmallObjWhileDesin
-                = desin.objects[i].functions.isShapeTooSmall() and desin.isDesintegrating
+            local removeShape = false
 
-            if removeSmallObjWhileDesin then -- Small object to remove?
+            local smallShape = desin.objects[i].functions.isShapeTooSmall()
+            local desintegrating = desin.isDesintegrating
 
-                table.insert(removeIndexes, i)
+            if smallShape and desintegrating then -- Small shape to remove.
+
+                removeShape = true
+                sound.desintegrate.done(AabbGetShapeCenterPos(desin.objects[i].shape))
                 desin.objects[i].done = true
-                if db then DebugPrint('Auto removed small object ' .. sfnTime()) end
-
-            elseif desin.objects[i].remove then -- Cancelled object to remove?
-
-                table.insert(removeIndexes, i)
+                if db then DebugPrint('Small shape set for removal ' .. sfnTime()) end
 
             end
 
+            if desin.objects[i].remove then -- Cancelled shape to remove.
+                removeShape = true
+                removeSound = true
+            end
+
+            if removeShape then
+                table.insert(removeIndexes, i)
+            end
+
         end
+
+
+        -- if removeSound then
+        --     sound.ui.removeShape()
+        -- end
+
 
         for i = 1, #removeIndexes do
 
-            if desin.objects[i].done then -- Small object?
-
-                sound.desintegrate.done(AabbGetShapeCenterPos(desin.objects[i].shape))
-
-            elseif desin.objects[i].remove then -- Cancelled object?
-
-                sound.ui.removeShape()
-
-            end
-
-            table.remove(desin.objects, removeIndexes[i]) -- Remove object safely.
+            local desinObjIndex = removeIndexes[i]
+            table.remove(desin.objects, desinObjIndex)
 
         end
-
 
     end
 
@@ -288,7 +317,6 @@ function initDesintegrator()
 
             local toolTr = Transform(Vec(0,1000,0), toolRot)
             SetShapeLocalTransform(toolNotUsing, toolTr)
-
 
         end
 

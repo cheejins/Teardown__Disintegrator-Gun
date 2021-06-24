@@ -4,8 +4,6 @@
 
 function desintegrateShapes()
 
-    desin.manageObjectRemoval()
-
     -- Desintigrate shapes.
     if desin.isDesintegrating then
         for i = 1, #desin.objects do
@@ -24,6 +22,7 @@ end
 function desintegrateShape(desinObject)
 
     if desinObject.start.done == false then
+
         desinObject.start.desintegrationStep()
         desinObject.start.done = true
         if db then DebugWatch('Desintegrating start done', sfnTime()) end
@@ -106,7 +105,7 @@ function buildDesinObject(shape)
         local sMin, sMax = GetShapeBounds(desinObject.shape)
 
         -- Set number of desintegration points.
-        desinObject.spread.points = math.floor((sx+sy+sz)/10) + 1
+        desinObject.spread.points = math.floor((sx+sy+sz)/8) + 1
         if db then DebugWatch('desinObject shapeSize', desinObject.spread.points) end
 
         desinObject.hit.positions = {} -- Reset each step.
@@ -152,7 +151,7 @@ function buildDesinObject(shape)
         -- Set number of desintegration points.
         local sMin, sMax = GetShapeBounds(desinObject.shape)
         local sx,sy,sz = GetShapeSize(shape)
-        desinObject.start.points = math.floor((sx+sy+sz)/15) + 1
+        desinObject.start.points = math.floor((sx+sy+sz)/8) + 1
 
         -- Limit number of points for performance.
         if desinObject.start.points > desinObject.properties.maxPoints then
