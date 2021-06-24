@@ -45,7 +45,7 @@ function buildDesinObject(shape)
 
     desinObject.shape = shape
     desinObject.body = GetShapeBody(shape)
-    desinObject.remove = false
+    desinObject.done = false
 
     local sx,sy,sz = GetShapeSize(shape)
 

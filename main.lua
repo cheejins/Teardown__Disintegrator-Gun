@@ -166,7 +166,7 @@ function initDesintegrator()
             if shape == desin.objects[i].shape then
 
                 shapeIsValid = false
-                desin.setObjectToBeRemoved(desin.objects[i]) -- Remove shape.
+                desin.setObjectToBeRemoved(desin.objects[i])
 
                 -- sound.desintegrate.done(AabbGetShapeCenterPos(desin.objects[i].shape))
 
@@ -204,37 +204,26 @@ function initDesintegrator()
     end
 
 
-    -- desin.remove = {}
-    -- desin.remove.shape = function(shape)
-    --     local indexesToRemove = {}
-    --     for i = 1, #desin.objects do
-    --         if desin.objects[i].shape == shape then
-    --             table.insert(indexesToRemove, i)
-    --         end
-    --     end
-    --     for i = 1, #indexesToRemove do
-    --         table.remove(desin.objects, indexesToRemove[i])
-    --     end
-    -- end
-
-
-    desin.setObjectToBeRemoved = function(desinObject)
-        desinObject.remove = true
-    end
-
 
     desin.manageObjectRemoval = function()
 
-        -- Remove small specified desin objects.
+        -- Remove specified desin objects.
         local removeIndexes = {}
+
         for i = 1, #desin.objects do
 
-            local desinObjectRemove = desin.objects[i].functions.isShapeTooSmall() or desin.objects[i].remove
+            local removeSmallObjWhileDesin
+                = desin.objects[i].functions.isShapeTooSmall() and desin.isDesintegrating
 
-            if desinObjectRemove then
+            if removeSmallObjWhileDesin then -- Small object to remove?
 
                 table.insert(removeIndexes, i)
-                if db then DebugPrint('Auto removed object ' .. sfnTime()) end
+                desin.objects[i].done = true
+                if db then DebugPrint('Auto removed small object ' .. sfnTime()) end
+
+            elseif desin.objects[i].remove then -- Cancelled object to remove?
+
+                table.insert(removeIndexes, i)
 
             end
 
@@ -242,11 +231,28 @@ function initDesintegrator()
 
         for i = 1, #removeIndexes do
 
-            table.remove(desin.objects, removeIndexes[i]) -- Remove objects safely.
+            if desin.objects[i].done then -- Small object?
+
+                sound.desintegrate.done(AabbGetShapeCenterPos(desin.objects[i].shape))
+
+            elseif desin.objects[i].remove then -- Cancelled object?
+
+                sound.ui.removeShape()
+
+            end
+
+            table.remove(desin.objects, removeIndexes[i]) -- Remove object safely.
 
         end
 
+
     end
+
+    -- Mark object for removal. Removed in desin.manageObjectRemoval()
+    desin.setObjectToBeRemoved = function(desinObject)
+        desinObject.remove = true
+    end
+
 
 end
 
@@ -342,7 +348,6 @@ function initSounds()
             end,
 
         }
-
 
     }
 
