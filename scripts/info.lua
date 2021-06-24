@@ -10,8 +10,8 @@ end
 
 function manageInfoUi()
 
-    if db then DebugWatch('info.closed', info.closed) end
-    if db then DebugWatch('info.neverShow', GetBool('savegame.mod.info.neverShow')) end
+    dbw('info.closed', info.closed)
+    dbw('info.neverShow', GetBool('savegame.mod.info.neverShow'))
 
 
     if desin.active() then

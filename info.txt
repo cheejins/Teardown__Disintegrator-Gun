@@ -1,7 +1,7 @@
 name = Desintigrator Gun
 author = Cheejins
-description = 
-tags =
+description = Select objects and desintegrate them bit by bit.
+tags = Tool
 
 # Available tags (comma-separated):
 # Map      - A custom map with no particular gameplay

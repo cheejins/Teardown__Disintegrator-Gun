@@ -4,9 +4,10 @@
 
 
 -- (Debug mode)
--- db = false
-db = true
--- dbw = function(func)  end
+db = false
+-- db = true
+dbw = function(name, value) if db then DebugWatch(name, value) end end
+dbp = function(str) if db then DebugPrint(str) end end
 
 
 function init()
@@ -29,10 +30,10 @@ function tick()
         desintegrateShapes()
 
         desin.manageMode()
-        if db then DebugWatch('Desin mode', desin.mode) end
+        dbw('Desin mode', desin.mode)
 
         desin.manageIsDesintegrating()
-        if db then DebugWatch('desin.isDesintegrating', desin.isDesintegrating) end
+        dbw('desin.isDesintegrating', desin.isDesintegrating)
 
         desin.manageColor()
         desin.manageOutline()
@@ -158,7 +159,7 @@ function initDesintegrator()
         local desinObject = buildDesinObject(shape) -- Insert valid desin object.
         setmetatable(desinObject, desinObjectMetatable)
         table.insert(desin.objects, desinObject)
-        if db then DebugPrint('Shape added ' .. sfnTime()) end
+        dbp('Shape added ' .. sfnTime())
     end
 
     desin.insert.processShape = function(shape)
@@ -177,14 +178,14 @@ function initDesintegrator()
                     if shapeBody ~= globalBody then -- Not global body.
 
                         local bodyShapes = GetBodyShapes(shapeBody)
-                        if db then DebugPrint('#bodyShapes ' .. #bodyShapes) end
+                        dbp('#bodyShapes ' .. #bodyShapes)
 
                         for j = 1, #bodyShapes do -- All body shapes.
                             for k = 1, #desin.objects do -- Check all body shapes with desin.objects shapes.
 
                                 if bodyShapes[j] == desin.objects[k].shape then -- Body shape is in desin.objects.
                                     desin.setObjectToBeRemoved(desin.objects[k]) -- Mark shape for removal
-                                    if db then DebugPrint('Man removed body shape ' .. sfnTime()) end
+                                    dbp('Man removed body shape ' .. sfnTime())
                                 end
 
                             end
@@ -195,7 +196,7 @@ function initDesintegrator()
                 elseif desin.mode == desin.modes.specific then -- Desin mode specific. Remove single shape.
 
                     desin.setObjectToBeRemoved(desin.objects[i])
-                    if db then DebugPrint('Man removed shape ' .. sfnTime()) end
+                    dbp('Man removed shape ' .. sfnTime())
 
                 end
 
@@ -234,9 +235,8 @@ function initDesintegrator()
 
 
     desin.manageObjectRemoval = function()
-        
+
         local removeIndexes = {} -- Remove specified desin objects.
-        local removeSound = false
 
         for i = 1, #desin.objects do
 
@@ -248,15 +248,14 @@ function initDesintegrator()
             if smallShape and desintegrating then -- Small shape to remove.
 
                 removeShape = true
-                sound.desintegrate.done(AabbGetShapeCenterPos(desin.objects[i].shape))
                 desin.objects[i].done = true
-                if db then DebugPrint('Small shape set for removal ' .. sfnTime()) end
+                sound.desintegrate.done(AabbGetShapeCenterPos(desin.objects[i].shape))
+                dbp('Small shape set for removal ' .. sfnTime())
 
             end
 
             if desin.objects[i].remove then -- Cancelled shape to remove.
                 removeShape = true
-                removeSound = true
             end
 
             if removeShape then
@@ -265,10 +264,6 @@ function initDesintegrator()
 
         end
 
-
-        -- if removeSound then
-        --     sound.ui.removeShape()
-        -- end
 
 
         for i = 1, #removeIndexes do
@@ -294,7 +289,7 @@ function initDesintegrator()
             local toolShapes = GetBodyShapes(GetToolBody())
             local toolPos = Vec(0.6,-0.5,-0.4) -- Base tool pos
 
-            if db then DebugWatch('#toolShapes', #toolShapes) end
+            dbw('#toolShapes', #toolShapes)
 
 
             local toolUsing = nil
@@ -354,7 +349,7 @@ function shootDesintegrator()
 
             sound.ui.reset()
 
-            if db then DebugWatch('Desin objects reset', sfnTime()) end
+            dbw('Desin objects reset', sfnTime())
 
         end
 

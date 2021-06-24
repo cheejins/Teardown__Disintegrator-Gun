@@ -13,8 +13,8 @@ function desintegrateShapes()
         end
     end
 
-    if db then DebugWatch('Desintegrating shapes', sfnTime()) end
-    if db then DebugWatch('Desin shapes count', #desin.objects) end
+    dbw('Desintegrating shapes', sfnTime())
+    dbw('Desin shapes count', #desin.objects)
 
 end
 
@@ -25,7 +25,7 @@ function desintegrateShape(desinObject)
 
         desinObject.start.desintegrationStep()
         desinObject.start.done = true
-        if db then DebugWatch('Desintegrating start done', sfnTime()) end
+        dbw('Desintegrating start done', sfnTime())
 
     else
 
@@ -49,10 +49,11 @@ function buildDesinObject(shape)
     local sx,sy,sz = GetShapeSize(shape)
 
     desinObject.properties = {
-        holeSize = 0.2,
+        holeSize = 0.22,
         shapeSize = (sx+sy+sz),
         tooSmall = false, -- Shape too small = remove shape.
-        maxPoints = 25
+        maxPoints = 25,
+        sizeDiv = 10, -- Sets number of points (shapeSize/sizeDiv)
     }
 
     desinObject.functions = {
@@ -105,16 +106,25 @@ function buildDesinObject(shape)
         local sMin, sMax = GetShapeBounds(desinObject.shape)
 
         -- Set number of desintegration points.
-        desinObject.spread.points = math.floor((sx+sy+sz)/8) + 1
-        if db then DebugWatch('desinObject shapeSize', desinObject.spread.points) end
+        desinObject.spread.points = math.floor((sx+sy+sz)/desinObject.properties.sizeDiv) + 1
+        dbw('desinObject shapeSize', desinObject.spread.points)
 
         desinObject.hit.positions = {} -- Reset each step.
 
         for i = 1, #desinObject.spread.positions do -- Process desintegration step.
 
-            local pos = desinObject.spread.positions[i]
+            -- Reject all other shapes.
+            local queriedShapes = QueryAabbShapes(sMin, sMax)
+            for i = 1, #queriedShapes do
 
-            -- Set source positions.
+                local shape = queriedShapes[i]
+                if shape ~= desinObject.shape then
+                    QueryRejectShape(queriedShapes[i])
+                end
+
+            end
+
+            -- Set spread positions.
             local rcDist = desinObject.properties.holeSize * 4
             local rcHit, rcHitPos, n, rcShape = QueryClosestPoint(desinObject.spread.positions[i], rcDist)
             if rcHit and rcShape == desinObject.shape then
@@ -126,10 +136,11 @@ function buildDesinObject(shape)
 
                 else
 
+                    local div = 80
                     local rdmVec = Vec(
-                        math.random()/90 - math.random()/90,
-                        math.random()/90 - math.random()/90,
-                        math.random()/90 - math.random()/90)
+                        math.random()/div - math.random()/div,
+                        math.random()/div - math.random()/div,
+                        math.random()/div - math.random()/div)
 
                     desinObject.spread.positions[i] = VecAdd(rcHitPos, rdmVec) -- Set new spread position at closest point.
 
@@ -141,7 +152,7 @@ function buildDesinObject(shape)
                 desinObject.functions.setRandomDesintegrationPosition(desinObject.spread.positions, i, sMin, sMax)
             end
 
-            desinObject.functions.desintegratePoint(pos) -- Actual desintegration.
+            desinObject.functions.desintegratePoint(desinObject.spread.positions[i]) -- Actual desintegration.
         end
     end
 
@@ -151,7 +162,7 @@ function buildDesinObject(shape)
         -- Set number of desintegration points.
         local sMin, sMax = GetShapeBounds(desinObject.shape)
         local sx,sy,sz = GetShapeSize(shape)
-        desinObject.start.points = math.floor((sx+sy+sz)/8) + 1
+        desinObject.start.points = math.floor((sx+sy+sz)/desinObject.properties.sizeDiv) + 1
 
         -- Limit number of points for performance.
         if desinObject.start.points > desinObject.properties.maxPoints then
@@ -163,7 +174,7 @@ function buildDesinObject(shape)
             table.insert(desinObject.spread.positions, position)
         end
 
-        if db then DebugWatch('desinObject.start.points', desinObject.start.points) end
+        dbw('desinObject.start.points', desinObject.start.points)
 
     end
 
