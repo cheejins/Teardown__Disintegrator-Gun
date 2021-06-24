@@ -2,6 +2,11 @@
 <p align="center">A weapon that disintigrates shapes (objects) bit by bit.</p>
 
 <br>
+
+## Media
+* [Demonstration Video](https://www.youtube.com/watch?v=_lC_RJ8JVnw)
+
+<br>
   
 ## Code Overview
 Main script files:
@@ -14,11 +19,6 @@ Main script files:
   
 * [scripts/info.lua](https://github.com/cheejins/Teardown-Mod---Desintigrator-Gun/blob/main/scripts/info.lua)
   * Manages the displaying of the info window.
-
-<br>
-
-## Media
-* [Demonstration Video](https://www.youtube.com/watch?v=_lC_RJ8JVnw)
 
 <br>
 
