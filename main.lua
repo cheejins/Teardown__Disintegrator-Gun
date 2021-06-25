@@ -84,7 +84,7 @@ function initDesintegrator()
 
 
     desin.properties = {
-        maxShapeVoxels = 50000,
+        maxShapeVoxels = 100000,
     }
 
 
@@ -159,15 +159,17 @@ function initDesintegrator()
         local desinObject = buildDesinObject(shape) -- Insert valid desin object.
         setmetatable(desinObject, desinObjectMetatable)
         table.insert(desin.objects, desinObject)
-        dbp('Shape added ' .. sfnTime())
+        dbp('Shape added. Voxels: ' .. GetShapeVoxelCount(shape) .. ' ... ' .. sfnTime())
+        
     end
-
 
 
     desin.insert.processShape = function(shape)
 
         local shapeBody = GetShapeBody(shape)
+
         local shapeWillInsert = true
+        local isShapeOversized = GetShapeVoxelCount(shape) > desin.properties.maxShapeVoxels
 
         for i = 1, #desin.objects do
 
@@ -177,9 +179,12 @@ function initDesintegrator()
 
                 if desin.mode == desin.modes.general then -- Desin mode general. Remove all shapes in body.
 
-                    -- if shapeBody == globalBody then -- Not global body.
-                    --     desin.setObjectToBeRemoved(desin.objects[i])
-                    -- else
+                    if shapeBody == globalBody then -- Not global body.
+
+                        desin.setObjectToBeRemoved(desin.objects[i])
+
+                    else
+
                         local bodyShapes = GetBodyShapes(shapeBody)
                         dbp('#bodyShapes ' .. #bodyShapes)
 
@@ -193,7 +198,8 @@ function initDesintegrator()
 
                             end
                         end
-                    -- end
+
+                    end
 
                 elseif desin.mode == desin.modes.specific then -- Remove single shape.
 
@@ -207,9 +213,10 @@ function initDesintegrator()
         end
 
 
-        -- Check shape not oversized.
-        if GetShapeVoxelCount(shape) > desin.properties.maxShapeVoxels then
 
+        if isShapeOversized then
+
+            -- Check shape not oversized.
             shapeWillInsert = false
 
             local message = "Object too large! (likely merged with the whole map)"
@@ -221,30 +228,40 @@ function initDesintegrator()
         end
 
 
+
         -- Insert valid shape 
         if shapeWillInsert then
+
             desin.insert.shape(shape)
             sound.ui.insert()
-        else
+
+        elseif not isShapeOversized then
+
             sound.ui.removeShape()
         end
+
+
 
     end
 
 
-    desin.insert.body = function(shape, body)
+    desin.insert.body = function(shape)
 
-        local bodyIsValid = body ~= globalBody
+        local body = GetShapeBody(shape)
 
-        if bodyIsValid then
+        if body ~= globalBody then
 
             local bodyShapes = GetBodyShapes(body)
             for i = 1, #bodyShapes do
+
                 desin.insert.processShape(bodyShapes[i])
+
             end
 
         else
+
             desin.insert.processShape(shape) -- Insert hit shape by default regardless of body shapes.
+
         end
 
     end
@@ -299,27 +316,27 @@ function initDesintegrator()
     desin.undo = function ()
 
         local lastIndex = #desin.objects
-        local lastShape = desin.objects[lastIndex].shape
+        -- local lastShape = desin.objects[lastIndex].shape
 
-        if desin.mode == desin.modes.specific then
+        -- if desin.mode == desin.modes.specific then
 
             desin.setObjectToBeRemoved(desin.objects[lastIndex]) -- Remove last object entry
 
-        elseif desin.mode == desin.modes.general then
+        -- elseif desin.mode == desin.modes.general then
 
-            local bodyShapes = GetBodyShapes(GetShapeBody(lastShape))
+        --     local bodyShapes = GetBodyShapes(GetShapeBody(lastShape))
 
-            for i = 1, #bodyShapes do -- All body shapes.
-                for j = 1, #desin.objects do -- Check all body shapes with desin.objects shapes.
+        --     for i = 1, #bodyShapes do -- All body shapes.
+        --         for j = 1, #desin.objects do -- Check all body shapes with desin.objects shapes.
 
-                    if bodyShapes[i] == desin.objects[j].shape then -- Body shape is in desin.objects.
-                        desin.setObjectToBeRemoved(desin.objects[j]) -- Mark shape for removal
-                    end
+        --             if bodyShapes[i] == desin.objects[j].shape then -- Body shape is in desin.objects.
+        --                 desin.setObjectToBeRemoved(desin.objects[j]) -- Mark shape for removal
+        --             end
 
-                end
-            end
+        --         end
+        --     end
 
-        end
+        -- end
 
         sound.ui.removeShape()
     end
@@ -363,61 +380,60 @@ function initDesintegrator()
 
 
 
-    desin.message = {}
+    desin.message = {
+        message = nil,
+        color = colors.white,
+        cancelCount = 0,
 
-    desin.message.message = nil
-    desin.message.color = colors.white
-    desin.message.cancelCount = 0
+        timer = {
+            time = 0,
+            timeDefault = (60 * GetTimeStep()) * 2.5, -- * seconds
+        },
 
-    desin.message.timer = {
-        time = 0,
-        timeDefault = (60 * GetTimeStep()) * 4, -- * seconds
-    }
+        insert = function(message, color)
+            desin.message.timer.time = desin.message.timer.timeDefault -- Reset message timer.
+            desin.message.color = color
+            desin.message.message = message
+            desin.message.cancelCount = 0 -- Reset cancel flag.
+        end,
 
-    desin.message.insert = function(message, color)
+        drawText = function ()
+            UiPush()
+                local c = desin.message.color
+                UiColor(c[1], c[2], c[3], 1)
 
-        desin.message.timer.time = desin.message.timer.timeDefault -- Reset message timer.
-        desin.message.color = color
-        desin.message.message = message
-        desin.message.cancelCount = 0 -- Reset cancel flag.
+                UiTranslate(UiCenter(), UiMiddle()+400)
+                UiFont('bold.ttf', 32)
+                UiAlign('center middle')
+                UiTextShadow(0,0,0,0.8,2,0.2)
+                UiText(desin.message.message)
+            UiPop()
+        end,
 
-    end
+        draw = function()
 
-    desin.message.drawText = function ()
-        UiPush()
-            local c = desin.message.color
-            UiColor(c[1], c[2], c[3], 1)
-
-            UiTranslate(UiCenter(), UiMiddle()+400)
-            UiFont('bold.ttf', 32)
-            UiAlign('center middle')
-            UiTextShadow(0,0,0,0.8,2,0.2)
-            UiText(desin.message.message)
-        UiPop()
-    end
-
-    desin.message.draw = function()
-
-        if desin.input.didSelect() then
-            desin.message.cancelCount = desin.message.cancelCount + 1
-        end
-
-        if desin.message.timer.time >= 0 then
-            desin.message.timer.time = desin.message.timer.time - GetTimeStep()
-
-            if desin.message.cancelCount > 1 then -- Check if message has been cancelled.
-
-                desin.message.timer.time = 0 -- Remove message if player shoots again.
-
-            else
-
-                desin.message.drawText()
-
+            if desin.input.didSelect() then
+                desin.message.cancelCount = desin.message.cancelCount + 1
             end
+
+            if desin.message.timer.time >= 0 then
+                desin.message.timer.time = desin.message.timer.time - GetTimeStep()
+
+                if desin.message.cancelCount > 1 then -- Check if message has been cancelled.
+
+                    desin.message.timer.time = 0 -- Remove message if player shoots again.
+
+                else
+
+                    desin.message.drawText()
+
+                end
+            end
+
+            dbw('desin.message.timer.time', desin.message.timer.time)
         end
 
-        dbw('desin.message.timer.time', desin.message.timer.time)
-    end
+    }
 
 end
 
@@ -430,15 +446,13 @@ function shootDesintegrator()
         local hit, hitPos, hitShape, hitBody = RaycastFromTransform(camTr)
         if hit then
 
-            local maxVoxels = desin.properties.maxShapeVoxels
-
-            if desin.mode == desin.modes.specific and GetShapeVoxelCount(hitShape) < maxVoxels then
+            if desin.mode == desin.modes.specific then
 
                 desin.insert.processShape(hitShape)
 
             elseif desin.mode == desin.modes.general then
 
-                desin.insert.body(hitShape, hitBody)
+                desin.insert.body(hitShape)
 
             end
 
@@ -480,17 +494,19 @@ function initSounds()
         desinLoop = LoadLoop("snd/desinLoop.ogg"),
     }
 
+    local sm = 0.9 -- Sound multiplier.
+
     sound = {
 
         desintegrate = {
 
             loop = function(pos)
-                PlayLoop(loops.desinLoop, pos, 0.6) -- Desintigrate sound.
-                PlayLoop(loops.desinLoop, game.ppos, 0.1)
+                PlayLoop(loops.desinLoop, pos, 0.6 * sm) -- Desintigrate sound.
+                PlayLoop(loops.desinLoop, game.ppos, 0.1 * sm)
             end,
 
             done = function(pos)
-                PlaySound(sounds.desinEnd, pos, 0.5)
+                PlaySound(sounds.desinEnd, pos, 0.5 * sm)
             end,
 
         },
@@ -498,27 +514,27 @@ function initSounds()
         ui = {
 
             insert = function()
-                PlaySound(sounds.insertShape, game.ppos, 0.8)
+                PlaySound(sounds.insertShape, game.ppos, 0.3 * sm)
             end,
 
             removeShape = function()
-                PlaySound(sounds.removeShape, game.ppos, 0.9)
+                PlaySound(sounds.removeShape, game.ppos, 0.23 * sm)
             end,
 
             reset = function ()
-                PlaySound(sounds.reset, game.ppos, 1)
+                PlaySound(sounds.reset, game.ppos, 0.28 * sm)
             end,
 
             activate = function ()
-                PlaySound(sounds.cancel, game.ppos, 0.25)
+                PlaySound(sounds.cancel, game.ppos, 0.4 * sm)
             end,
 
             deactivate = function ()
-                PlaySound(sounds.start, game.ppos, 0.2)
+                PlaySound(sounds.start, game.ppos, 0.25 * sm)
             end,
 
             invalid = function ()
-                PlaySound(sounds.invalid, game.ppos, 1)
+                PlaySound(sounds.invalid, game.ppos, 0.45 * sm)
             end,
 
         }
