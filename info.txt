@@ -1,6 +1,6 @@
-name = Desintegrator Gun
+name = Disintegrator Gun
 author = Cheejins
-description = Select objects and desintegrate them bit by bit.
+description = Select objects and disintegrate them bit by bit.
 tags = Tool
 
 # Available tags (comma-separated):

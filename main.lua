@@ -1,11 +1,11 @@
-#include "scripts/desintegrator.lua"
+#include "scripts/disintegrator.lua"
 #include "scripts/utility.lua"
 #include "scripts/info.lua"
 
 
 -- (Debug mode)
 db = false
-db = true
+-- db = true
 dbw = function(name, value) if db then DebugWatch(name, value) end end
 dbp = function(str) if db then DebugPrint(str) end end
 
@@ -51,9 +51,9 @@ function initDesintegrator()
     desin = {}
 
     desin.setup = {
-        name = 'desintegrator',
-        title = 'Desintegrator',
-        voxPath = 'MOD/vox/desintegrator.vox',
+        name = 'disintegrator',
+        title = 'Disintegrator',
+        voxPath = 'MOD/vox/disintegrator.vox',
     }
 
     desin.active = function(includeVehicle) -- Player is wielding the desintegrator.
@@ -84,7 +84,29 @@ function initDesintegrator()
 
 
     desin.properties = {
-        maxShapeVoxels = 100000,
+        shapeVoxelLimit = 1000*2000,
+
+        voxels = {
+
+            limit = 1000*1000*10,
+
+            getCount = function ()
+
+                local voxelCount = 0
+                for i = 1, #desin.objects do
+                    voxelCount = voxelCount + GetShapeVoxelCount(desin.objects[i].shape)
+                end
+                return voxelCount
+
+            end,
+
+            getLimitReached = function ()
+
+                return desin.properties.voxels.getCount() > desin.properties.voxels.limit
+
+            end,
+
+        }
     }
 
 
@@ -160,7 +182,6 @@ function initDesintegrator()
         setmetatable(desinObject, desinObjectMetatable)
         table.insert(desin.objects, desinObject)
         dbp('Shape added. Voxels: ' .. GetShapeVoxelCount(shape) .. ' ... ' .. sfnTime())
-        
     end
 
 
@@ -169,7 +190,9 @@ function initDesintegrator()
         local shapeBody = GetShapeBody(shape)
 
         local shapeWillInsert = true
-        local isShapeOversized = GetShapeVoxelCount(shape) > desin.properties.maxShapeVoxels
+        local isShapeOversized = GetShapeVoxelCount(shape) > desin.properties.shapeVoxelLimit
+        local voxelLimitReached = desin.properties.voxels.getLimitReached()
+
 
         for i = 1, #desin.objects do
 
@@ -213,20 +236,28 @@ function initDesintegrator()
         end
 
 
+        if desin.properties.voxels.getLimitReached() then
 
-        if isShapeOversized then
+            local message = "Voxel limit reached! \n (Object might be merged with the whole map) \n (Too many disintigrating voxels = game crash)"
+            desin.message.insert(message, colors.red)
+
+            shapeWillInsert = false
+            sound.ui.invalid()
+
+            dbp("Voxel limit reached: " .. desin.properties.voxels.getCount() .. " ... " .. sfnTime())
+
+        elseif isShapeOversized then
 
             -- Check shape not oversized.
             shapeWillInsert = false
 
-            local message = "Object too large! (likely merged with the whole map)"
+            local message = "Object Too Large! \n (Object likely merged with the whole map)"
             desin.message.insert(message, colors.red)
 
             sound.ui.invalid()
             dbp("Oversized shape rejected. Voxels: " .. GetShapeVoxelCount(shape) .. " ... " .. sfnTime())
 
         end
-
 
 
         -- Insert valid shape 
@@ -239,8 +270,6 @@ function initDesintegrator()
 
             sound.ui.removeShape()
         end
-
-
 
     end
 
@@ -364,7 +393,6 @@ function initDesintegrator()
                 toolNotUsing = toolShapes[1]
             end
 
-
             -- Set tool transforms
             local toolRot = GetShapeLocalTransform(toolShapes[1]).rot
 
@@ -387,11 +415,11 @@ function initDesintegrator()
 
         timer = {
             time = 0,
-            timeDefault = (60 * GetTimeStep()) * 2.5, -- * seconds
+            timeDefault = (60 * GetTimeStep()) * 3.5, -- * seconds
         },
 
         insert = function(message, color)
-            desin.message.timer.time = desin.message.timer.timeDefault -- Reset message timer.
+            desin.message.timer.time = (string.len(message) * 2) * GetTimeStep() + 2 -- Message time based on message length.
             desin.message.color = color
             desin.message.message = message
             desin.message.cancelCount = 0 -- Reset cancel flag.
@@ -400,10 +428,10 @@ function initDesintegrator()
         drawText = function ()
             UiPush()
                 local c = desin.message.color
-                UiColor(c[1], c[2], c[3], 1)
+                UiColor(c[1], c[2], c[3], 0.8)
 
-                UiTranslate(UiCenter(), UiMiddle()+400)
-                UiFont('bold.ttf', 32)
+                UiTranslate(UiCenter(), UiMiddle()+300)
+                UiFont('bold.ttf', 28)
                 UiAlign('center middle')
                 UiTextShadow(0,0,0,0.8,2,0.2)
                 UiText(desin.message.message)
@@ -570,13 +598,53 @@ function draw()
     -- Draw desin.mode text
     if desin.active() then
         UiPush()
-            UiTranslate(UiCenter(), UiMiddle() + 460)
+
+            local fontSize = 24
+            local vMargin = fontSize * 1.2
+
             UiColor(1,1,1,1)
-            UiFont('bold.ttf', 32)
+            UiFont('bold.ttf', fontSize)
             UiAlign('center middle')
-            -- UiText('Mode: ' .. desin.mode)
-            UiTextShadow(0,0,0,0.8,2,0.2)
-            UiText('mode: ' .. desin.mode .. ' (c) ')
+            UiTextShadow(0,0,0,0.4,2,0.2)
+            UiTranslate(UiCenter(), UiMiddle() + 480)
+
+
+
+                UiPush()
+
+                    local a = 0.5
+
+                    -- Selection mode.
+                    UiColor(1,1,1,a)
+                    UiText('MODE: ' .. string.upper(desin.mode) .. ' (c) ')
+
+                    if not desin.isDesintegrating then
+
+                        -- Desintegration voxels count.
+                        local voxelCount = desin.properties.voxels.getCount()
+
+                        local c = (1000*500 / (voxelCount + 100*100)) ^ 2
+                        UiColor(1, c, c, a)
+
+                        UiTranslate(0, -vMargin)
+                        UiText('VOXELS: ' .. sfnCommas(voxelCount))
+
+
+                        -- Desintegration objects count.
+                        local desinObjects = #desin.objects
+
+                        local c = (50 / (desinObjects + 10)) ^ 2
+                        UiColor(1, c, c, a)
+
+                        UiTranslate(0, -vMargin)
+                        UiText('OBJECTS: ' .. sfnCommas(desinObjects))
+
+                    end
+
+                UiPop()
+
+            -- 
+
         UiPop()
     end
 

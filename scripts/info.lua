@@ -1,9 +1,16 @@
 #include "../main.lua"
 
+local neverShow = { -- Auto show on updates.
+    'savegame.mod.info.neverShow',
+    'savegame.mod.info.neverShow.2021.06.24'
+}
 
 function initInfo()
+
+
+
     info = {
-        closed = GetBool('savegame.mod.info.neverShow'),
+        closed = GetBool(neverShow[#neverShow]),
     }
 end
 
@@ -11,8 +18,7 @@ end
 function manageInfoUi()
 
     dbw('info.closed', info.closed)
-    dbw('info.neverShow', GetBool('savegame.mod.info.neverShow'))
-
+    dbw('info.neverShow', GetBool(neverShow[#neverShow]))
 
     if desin.active() then
 
@@ -22,8 +28,8 @@ function manageInfoUi()
 
                 info.closed = true
 
-                SetBool('savegame.mod.info.neverShow', true)
-                SetString('hud.notification','(Desintegrator info window will not show again)')
+                SetBool(neverShow[#neverShow], true)
+                SetString('hud.notification','(Desintegrator info window will not show until the next major update)')
 
             elseif InputPressed('lmb') then
 
@@ -40,7 +46,7 @@ function manageInfoUi()
             UiPush()
                 UiTranslate(UiCenter(), UiMiddle())
                 UiAlign("center middle")
-                UiImageBox('MOD/img/info.png', 940*0.8, 700*0.8, 1, 1)
+                UiImageBox('MOD/img/info.png', 940*0.8, 836*0.8, 1, 1)
             UiPop()
 
         end

@@ -213,3 +213,7 @@
         return string.format("%."..s.."f", numberToFormat)
     end
     function sfnTime(dec) return sfn(' '..GetTime(), dec or 4) end
+    function sfnCommas(dec)
+        return tostring(math.floor(dec)):reverse():gsub("(%d%d%d)","%1,"):gsub(",(%-?)$","%1"):reverse()
+        -- https://stackoverflow.com/questions/10989788/format-integer-in-lua
+    end
