@@ -7,11 +7,10 @@ local neverShow = { -- Auto show on updates.
 
 function initInfo()
 
-
-
     info = {
         closed = GetBool(neverShow[#neverShow]),
     }
+
 end
 
 

@@ -1,6 +1,7 @@
 2021-06-25
 - Updated sounds.
 - Updated error messages.
+- Added total object volume ui text. 
 
 
 2021-06-24

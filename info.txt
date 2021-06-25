@@ -3,6 +3,9 @@ author = Cheejins
 description = Select objects and disintegrate them bit by bit.
 tags = Tool
 
+noupload
+[noupload]
+
 # Available tags (comma-separated):
 # Map      - A custom map with no particular gameplay
 # Gameplay - Mod has a mission, objective or other gameplay

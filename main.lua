@@ -90,7 +90,7 @@ function initDesintegrator()
 
             limit = 1000*1000*10,
 
-            getCount = function ()
+            getCount = function()
 
                 local voxelCount = 0
                 for i = 1, #desin.objects do
@@ -100,13 +100,27 @@ function initDesintegrator()
 
             end,
 
-            getLimitReached = function ()
+            getLimitReached = function()
 
                 return desin.properties.voxels.getCount() > desin.properties.voxels.limit
 
             end,
 
-        }
+        },
+
+        getShapesTotalVolume = function()
+
+            local v = 0
+            local x,y,z = nil,nil,nil
+
+            for i = 1, #desin.objects do
+                x,y,z = GetShapeSize(desin.objects[i].shape)
+                v = v + x*y*z
+            end
+
+            return v
+
+        end,
     }
 
 
@@ -432,7 +446,7 @@ function initDesintegrator()
                 local c = desin.message.color
                 UiColor(c[1], c[2], c[3], 0.8)
 
-                UiTranslate(UiCenter(), UiMiddle()+300)
+                UiTranslate(UiCenter(), UiMiddle()+200)
                 UiFont('bold.ttf', 28)
                 UiAlign('center middle')
                 UiTextShadow(0,0,0,0.8,2,0.2)
@@ -545,7 +559,7 @@ function initSounds()
         ui = {
 
             insertShape = function()
-                PlaySound(sounds.insertShape, game.ppos, 0.4 * sm)
+                PlaySound(sounds.insertShape, game.ppos, 0.5 * sm)
             end,
 
             removeShape = function()
@@ -606,51 +620,122 @@ function draw()
     if desin.active() then
         UiPush()
 
-            local fontSize = 24
+            local fontSize = 26
             local vMargin = fontSize * 1.2
+
+            local rectH = fontSize
+            local rectW = 0
+
+            -- local addRectH = function(h)
+            --     rectH = rectH + h
+            -- end
+
+            -- local setRectW = function(str)
+
+            --     local len = string.len(str)
+            --     local w = len * fontSize
+
+            --     if w > rectW then
+            --         rectW = w
+            --     end
+            -- end
+
+            local a = 0.35
 
             UiColor(1,1,1,1)
             UiFont('bold.ttf', fontSize)
             UiAlign('center middle')
-            UiTextShadow(0,0,0,0.4,2,0.2)
-            UiTranslate(UiCenter(), UiMiddle() + 480)
+            UiTextOutline(0,0,0,a,0.3)
+            UiTranslate(UiCenter(), UiMiddle() + 460)
 
+            UiPush()
 
-
-                UiPush()
-
-                    local a = 0.5
+                -- if not desin.isDesintegrating then
 
                     -- Selection mode.
                     UiColor(1,1,1,a)
-                    UiText('MODE: ' .. string.upper(desin.mode) .. ' (c) ')
-
-                    if not desin.isDesintegrating then
-
-                        -- Desintegration voxels count.
-                        local voxelCount = desin.properties.voxels.getCount()
-
-                        local c = (1000*500 / (voxelCount + 100*100)) ^ 2
-                        UiColor(1, c, c, a)
-
-                        UiTranslate(0, -vMargin)
-                        UiText('VOXELS: ' .. sfnCommas(voxelCount))
+                    local modeText = 'MODE: ' .. string.upper(desin.mode) .. ' (c) '
+                    UiText(modeText)
+                    UiTranslate(0, -vMargin)
+                    -- addRectH(fontSize)
+                    -- setRectW(modeText)
 
 
-                        -- Desintegration objects count.
-                        local desinObjects = #desin.objects
+                        UiPush()
 
-                        local c = (50 / (desinObjects + 10)) ^ 2
-                        UiColor(1, c, c, a)
+                        -- addRectH(vMargin)
 
-                        UiTranslate(0, -vMargin)
-                        UiText('OBJECTS: ' .. sfnCommas(desinObjects))
 
-                    end
+                            -- -- Desintegration objects combined 3D volume.
+                            -- local volume = desin.properties.getShapesTotalVolume()
+                            -- local c = (1000*400 / (volume + 100)) ^ 1.5
+                            -- UiColor(1, c, c, a)
+
+                            -- UiTranslate(0, -vMargin)
+                            -- local volText = 'VOLUME: ' .. sfnCommas(volume)
+                            -- UiText(volText)
+                            -- addRectH(vMargin)
+                            -- setRectW(volText)
+
+
+
+                            -- Desintegration voxels count.
+                            local voxelCount = desin.properties.voxels.getCount()
+
+                            -- local c = (1000*500 / (voxelCount + 100*100)) ^ 2
+                            -- UiColor(1, c, c, a)
+                            UiTranslate(0, -vMargin)
+                            local voxText = 'VOXELS: ' .. sfnCommas(voxelCount)
+                            UiText(voxText)
+                            -- addRectH(vMargin)
+                            -- setRectW(voxText)
+
+
+
+                            -- -- Desintegration vol/vox ratio count.
+                            -- local desinObjects = #desin.objects
+                            -- local volume = desin.properties.getShapesTotalVolume()
+                            -- local voxelCount = desin.properties.voxels.getCount()
+
+                            -- local volume = (1000*100 / (volume + 1000*10)) ^ 2
+                            -- local voxels = (1000*100 / (voxelCount + 1000*10)) ^ 2
+
+                            -- local c = (volume + voxels) / 2
+                            -- UiColor(1, c, c, a)
+
+                            -- UiTranslate(0, -vMargin)
+                            -- local voxText = 'VOX/VOL: ' .. sfnCommas(voxelCount)
+                            -- UiText(voxText)
+                            -- addRectH(vMargin)
+                            -- setRectW(voxText)
+
+
+                            -- Desintegration objects count.
+                            local desinObjects = #desin.objects
+
+                            local c = (50 / (desinObjects + 10)) ^ 2
+                            UiColor(1, c, c, a)
+
+                            UiTranslate(0, -vMargin)
+                            local objText = 'OBJECTS: ' .. sfnCommas(desinObjects)
+                            UiText(objText)
+                            -- addRectH(vMargin)
+                            -- setRectW(objText)
+
+
+
+                        UiPop()
+
+                    -- end
+
+                    
+                    -- UiPush()
+                    -- UiColor(0,0,0,0.25)
+                    -- UiTranslate(0, -rectH/2 + (vMargin + fontSize))
+                    -- UiRect(300, rectH)
+                    -- UiPop()
 
                 UiPop()
-
-            -- 
 
         UiPop()
     end

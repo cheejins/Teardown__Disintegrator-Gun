@@ -58,8 +58,8 @@ function buildDesinObject(shape)
 
     desinObject.functions = {
 
-        desintegratePos = function(pos)
-            local hs = desinObject.properties.holeSize
+        desintegratePos = function(pos, mult)
+            local hs = desinObject.properties.holeSize * (mult or 1)
             MakeHole(pos, hs, hs, hs, hs)
 
             local c = desin.colors.desintegrating
@@ -71,6 +71,21 @@ function buildDesinObject(shape)
                 math.random(bbMin[1], bbMax[1]) + math.random() - math.random(),
                 math.random(bbMin[2], bbMax[2]) + math.random() - math.random(),
                 math.random(bbMin[3], bbMax[3]) + math.random() - math.random())
+        end,
+
+        setHitDesintegrationPosition = function(table, index) -- Position close to a random previous hit position.
+            local randomHitIndex = math.random(1, #desinObject.spread.positions)
+            local randomHitPos = desinObject.spread.positions[randomHitIndex]
+
+            local mult = 2
+            local vecOffset = Vec(
+                (math.random() - math.random()) * mult,
+                (math.random() - math.random()) * mult,
+                (math.random() - math.random()) * mult)
+
+            table[index] = VecAdd(randomHitPos, vecOffset)
+
+
         end,
 
         isShapeTooSmall = function()
@@ -150,7 +165,8 @@ function buildDesinObject(shape)
                 desinObject.functions.setRandomDesintegrationPosition(desinObject.spread.positions, i, sMin, sMax) -- no hit
             end
 
-            desinObject.functions.desintegratePos(desinObject.spread.positions[i]) -- Pos desintegration.
+            local holeSizeMult = gtZero(math.random() - 0.8) + 1
+            desinObject.functions.desintegratePos(desinObject.spread.positions[i], holeSizeMult) -- Pos desintegration.
         end
     end
 
@@ -167,12 +183,20 @@ function buildDesinObject(shape)
             desinObject.start.points = desinObject.properties.maxPoints
         end
 
-        for i = 1, desinObject.start.points do -- Set starting spread positions.
+        -- Set starting spread positions.
+        for i = 1, desinObject.start.points do
             local position = desinObject.functions.setRandomDesintegrationPosition(desinObject.spread.positions, i, sMin, sMax)
             table.insert(desinObject.spread.positions, position)
         end
-
         dbw('desinObject.start.points', desinObject.start.points)
+
+        -- Initial spread step.
+        desinObject.spread.desintegrationStep()
+
+        -- Set starting hit positions.
+        for i = 1, desinObject.start.points do 
+            table.insert(desinObject.hit.positions, desinObject.spread.positions[i])
+        end
 
     end
 
