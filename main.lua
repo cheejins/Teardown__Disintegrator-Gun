@@ -165,7 +165,9 @@ function initDesintegrator()
     desin.mode = desin.modes.general
     desin.manageMode = function()
         if desin.input.didChangeMode() then
-            beep()
+            
+            sound.ui.switchMode()
+
             if desin.mode == desin.modes.specific then
                 desin.mode = desin.modes.general
             else
@@ -238,7 +240,7 @@ function initDesintegrator()
 
         if desin.properties.voxels.getLimitReached() then
 
-            local message = "Voxel limit reached! \n (Object might be merged with the whole map) \n (Too many disintigrating voxels = game crash)"
+            local message = "Voxel limit reached! \n > Object might be merged with the whole map. \n > Too many disintigrating voxels = game crash. \n > Try specific mode."
             desin.message.insert(message, colors.red)
 
             shapeWillInsert = false
@@ -251,7 +253,7 @@ function initDesintegrator()
             -- Check shape not oversized.
             shapeWillInsert = false
 
-            local message = "Object Too Large! \n (Object likely merged with the whole map)"
+            local message = "Object Too Large! \n > Object might be merged with the whole map. \n > Try specific mode."
             desin.message.insert(message, colors.red)
 
             sound.ui.invalid()
@@ -264,7 +266,7 @@ function initDesintegrator()
         if shapeWillInsert then
 
             desin.insert.shape(shape)
-            sound.ui.insert()
+            sound.ui.insertShape()
 
         elseif not isShapeOversized then
 
@@ -516,6 +518,7 @@ function initSounds()
         desinEnd = LoadSound("snd/desinEnd.ogg"),
 
         invalid = LoadSound("snd/invalid.ogg"),
+        switchMode = LoadSound("snd/switchMode.ogg"),
     }
 
     loops = {
@@ -541,28 +544,32 @@ function initSounds()
 
         ui = {
 
-            insert = function()
-                PlaySound(sounds.insertShape, game.ppos, 0.3 * sm)
+            insertShape = function()
+                PlaySound(sounds.insertShape, game.ppos, 0.4 * sm)
             end,
 
             removeShape = function()
-                PlaySound(sounds.removeShape, game.ppos, 0.23 * sm)
+                PlaySound(sounds.removeShape, game.ppos, 0.25 * sm)
             end,
 
             reset = function ()
-                PlaySound(sounds.reset, game.ppos, 0.28 * sm)
+                PlaySound(sounds.reset, game.ppos, 1 * sm)
             end,
 
             activate = function ()
-                PlaySound(sounds.cancel, game.ppos, 0.4 * sm)
+                PlaySound(sounds.cancel, game.ppos, 0.5 * sm)
             end,
 
             deactivate = function ()
-                PlaySound(sounds.start, game.ppos, 0.25 * sm)
+                PlaySound(sounds.start, game.ppos, 0.35 * sm)
             end,
 
             invalid = function ()
                 PlaySound(sounds.invalid, game.ppos, 0.45 * sm)
+            end,
+
+            switchMode = function ()
+                PlaySound(sounds.switchMode, game.ppos, 1 * sm)
             end,
 
         }
