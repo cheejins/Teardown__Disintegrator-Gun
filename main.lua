@@ -22,12 +22,11 @@ end
 
 function tick()
 
-    if GetBool('savegame.mod.info.neverShow') or info.closed then -- info.lua
+    -- manageInfoUi()
+
+    if info.checkInfoClosed() then -- info.lua
 
         updateGameTable()
-
-        shootDesintegrator()
-        desintegrateShapes()
 
         desin.manageMode()
         dbw('Desin mode', desin.mode)
@@ -40,6 +39,9 @@ function tick()
         desin.manageColor()
         desin.manageOutline()
         desin.manageToolAnimation()
+
+        shootDesintegrator()
+        desintegrateShapes()
 
     end
 
@@ -152,7 +154,6 @@ function initDesintegrator()
         end
         desin.color = desin.colors.notDesintegrating
     end
-
 
 
     desin.manageOutline = function()
@@ -484,25 +485,54 @@ end
 
 function shootDesintegrator()
 
-    if desin.input.didSelect() then -- Shoot desin
+
+    -- local camTr = GetCameraTransform()
+    -- local hit, hitPos, hitShape, hitBody = RaycastFromTransform(camTr)
+
+    -- Input.
+    local didSelect = desin.input.didSelect()
+    local didReset = desin.input.didReset()
+    local didUndo = desin.input.didUndo()
+
+
+    -- if hit and not didSelect and desin.active() and not desin.isDesintegrating then -- Highlight shape (addable/removable)
+
+    --     -- Check if shape in objects table.
+    --     local isShapeInDesinObjects = false
+    --     for i = 1, #desin.objects do
+    --         if hitShape == desin.objects[i].shape then
+    --             isShapeInDesinObjects = true
+    --             break
+    --         end
+    --     end
+
+    --     if isShapeInDesinObjects then
+    --         -- DrawShapeOutline(hitShape, 1, 0, 0, 0.5) -- Red outline (shape is removable)
+    --         -- PointLight(hitPos, 1,0,0,0.5)
+    --     else
+    --         -- PointLight(hitPos, 1,1,1,0.5)
+    --         DrawShapeOutline(hitShape, 1, 1, 1, 1) -- White outline (shape is addable)
+    --     end
+
+    -- else
+
+
+    if didSelect then -- Shoot desin
 
         local camTr = GetCameraTransform()
         local hit, hitPos, hitShape, hitBody = RaycastFromTransform(camTr)
-        if hit then
 
-            if desin.mode == desin.modes.specific then
+        if hit and desin.mode == desin.modes.specific then
 
-                desin.insert.processShape(hitShape)
+            desin.insert.processShape(hitShape)
 
-            elseif desin.mode == desin.modes.general then
+        elseif hit and desin.mode == desin.modes.general then
 
-                desin.insert.body(hitShape)
-
-            end
+            desin.insert.body(hitShape)
 
         end
 
-    elseif desin.input.didReset() then -- Reset desin
+    elseif didReset then -- Reset desin
 
         desin.objects = {}
         desin.isDesintegrating = false
@@ -511,7 +541,7 @@ function shootDesintegrator()
 
         dbw('Desin objects reset', sfnTime())
 
-    elseif desin.input.didUndo() and #desin.objects >= 1 then -- Undo last object insertion (body or shapes)
+    elseif didUndo and #desin.objects >= 1 then -- Undo last object insertion (body or shapes)
 
         desin.undo()
 

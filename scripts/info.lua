@@ -2,13 +2,43 @@
 
 local neverShow = { -- Auto show on updates.
     'savegame.mod.info.neverShow',
-    'savegame.mod.info.neverShow.2021.06.24'
+    'savegame.mod.info.neverShow.2021.06.24',
+    'savegame.mod.info.neverShow.2021.06.26',
 }
 
 function initInfo()
 
     info = {
+
         closed = GetBool(neverShow[#neverShow]),
+
+        setNeverShow = function(enabled)
+            SetBool(neverShow[#neverShow], enabled)
+        end,
+
+        getNeverShow = function ()
+            return GetBool(neverShow[#neverShow])
+        end,
+
+        res = {
+            w = 1296,
+            h =  836,
+            scale = 0.8,
+        },
+
+        inputsPressed = {
+            count = 0,
+        },
+
+        checkInfoClosed = function ()
+
+            if info.inputsPressed.count >= 1 then
+                return true
+            end
+            return false
+
+        end,
+
     }
 
 end
@@ -17,39 +47,36 @@ end
 function manageInfoUi()
 
     dbw('info.closed', info.closed)
-    dbw('info.neverShow', GetBool(neverShow[#neverShow]))
+    dbw('info.neverShow', info.getNeverShow())
 
     if desin.active() then
-
         if not info.closed then
+
 
             if InputPressed('rmb') then
 
                 info.closed = true
+                info.inputsPressed.count = info.inputsPressed.count + 1
 
-                SetBool(neverShow[#neverShow], true)
+                info.setNeverShow(true)
                 SetString('hud.notification','(Desintegrator info window will not show until the next major update)')
 
             elseif InputPressed('lmb') then
 
                 info.closed = true
+                info.inputsPressed.count = info.inputsPressed.count + 1
 
             end
 
-        end
-
-
-        -- Display info UI
-        if not info.closed then
-
+            -- Display info UI
             UiPush()
-                UiTranslate(UiCenter(), UiMiddle())
-                UiAlign("center middle")
-                UiImageBox('MOD/img/info.png', 940*0.8, 836*0.8, 1, 1)
+            UiTranslate(UiCenter(), UiMiddle())
+            UiAlign("center middle")
+            UiImageBox('MOD/img/info.png', info.res.w * info.res.scale, info.res.h * info.res.scale, 1, 1)
             UiPop()
 
-        end
 
+        end
     end
 
 end
