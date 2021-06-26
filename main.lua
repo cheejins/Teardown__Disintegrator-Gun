@@ -11,18 +11,19 @@ dbp = function(str) if db then DebugPrint(str) end end
 
 
 function init()
-    initDesintegrator()
-    initSounds()
-    initInfo()
 
     updateGameTable()
     globalBody = FindBodies('', true)[1]
+
+    initDesintegrator()
+    initInfo()
+
+    initSounds()
+
 end
 
 
 function tick()
-
-    -- manageInfoUi()
 
     if info.checkInfoClosed() then -- info.lua
 
@@ -87,6 +88,12 @@ function initDesintegrator()
 
     desin.properties = {
         shapeVoxelLimit = 1000*2000,
+
+        objectsLimit = 300,
+
+        objectsLimitReached = function ()
+            return #desin.objects >= desin.properties.objectsLimit
+        end,
 
         voxels = {
 
@@ -253,9 +260,9 @@ function initDesintegrator()
         end
 
 
-        if desin.properties.voxels.getLimitReached() then
+        if desin.properties.voxels.getLimitReached() or desin.properties.objectsLimitReached() then
 
-            local message = "Voxel limit reached! \n > Object might be merged with the whole map. \n > Too many disintigrating voxels = game crash. \n > Try specific mode."
+            local message = "Voxel/Object limit reached! \n > Object might be merged with the whole map. \n > Too many disintigrating voxels = game crash. \n > Try specific mode."
             desin.message.insert(message, colors.red)
 
             shapeWillInsert = false
@@ -625,7 +632,7 @@ end
 
 function draw()
 
-    manageInfoUi()
+    drawInfoWindow()
 
     desin.message.draw()
 
@@ -652,27 +659,9 @@ function draw()
 
             local fontSize = 26
             local vMargin = fontSize * 1.2
-
-            local rectH = fontSize
-            local rectW = 0
-
-            -- local addRectH = function(h)
-            --     rectH = rectH + h
-            -- end
-
-            -- local setRectW = function(str)
-
-            --     local len = string.len(str)
-            --     local w = len * fontSize
-
-            --     if w > rectW then
-            --         rectW = w
-            --     end
-            -- end
-
             local a = 0.35
 
-            UiColor(1,1,1,1)
+            UiColor(1,1,1,a)
             UiFont('bold.ttf', fontSize)
             UiAlign('center middle')
             UiTextOutline(0,0,0,a,0.3)
@@ -687,88 +676,65 @@ function draw()
                     local modeText = 'MODE: ' .. string.upper(desin.mode) .. ' (c) '
                     UiText(modeText)
                     UiTranslate(0, -vMargin)
-                    -- addRectH(fontSize)
-                    -- setRectW(modeText)
-
 
                         UiPush()
 
-                        -- addRectH(vMargin)
-
-
-                            -- -- Desintegration objects combined 3D volume.
-                            -- local volume = desin.properties.getShapesTotalVolume()
-                            -- local c = (1000*400 / (volume + 100)) ^ 1.5
-                            -- UiColor(1, c, c, a)
-
-                            -- UiTranslate(0, -vMargin)
-                            -- local volText = 'VOLUME: ' .. sfnCommas(volume)
-                            -- UiText(volText)
-                            -- addRectH(vMargin)
-                            -- setRectW(volText)
-
-
-
                             -- Desintegration voxels count.
                             local voxelCount = desin.properties.voxels.getCount()
-
+                            
+                            local c = 1
+                            if desin.properties.voxels.getLimitReached() then
+                                c = 0
+                            end
                             -- local c = (1000*500 / (voxelCount + 100*100)) ^ 2
-                            -- UiColor(1, c, c, a)
+
+                            UiColor(1, c, c, a)
                             UiTranslate(0, -vMargin)
                             local voxText = 'VOXELS: ' .. sfnCommas(voxelCount)
                             UiText(voxText)
-                            -- addRectH(vMargin)
-                            -- setRectW(voxText)
-
-
-
-                            -- -- Desintegration vol/vox ratio count.
-                            -- local desinObjects = #desin.objects
-                            -- local volume = desin.properties.getShapesTotalVolume()
-                            -- local voxelCount = desin.properties.voxels.getCount()
-
-                            -- local volume = (1000*100 / (volume + 1000*10)) ^ 2
-                            -- local voxels = (1000*100 / (voxelCount + 1000*10)) ^ 2
-
-                            -- local c = (volume + voxels) / 2
-                            -- UiColor(1, c, c, a)
-
-                            -- UiTranslate(0, -vMargin)
-                            -- local voxText = 'VOX/VOL: ' .. sfnCommas(voxelCount)
-                            -- UiText(voxText)
-                            -- addRectH(vMargin)
-                            -- setRectW(voxText)
-
 
                             -- Desintegration objects count.
                             local desinObjects = #desin.objects
+                            -- local c = (30 / (desinObjects + 1)) ^ 2
+                            -- UiColor(1, c, c, a)
 
-                            local c = (50 / (desinObjects + 10)) ^ 2
+                            local c = 1
+                            if desin.properties.objectsLimitReached() then
+                                c = 0
+                            end
                             UiColor(1, c, c, a)
 
                             UiTranslate(0, -vMargin)
                             local objText = 'OBJECTS: ' .. sfnCommas(desinObjects)
                             UiText(objText)
-                            -- addRectH(vMargin)
-                            -- setRectW(objText)
-
-
 
                         UiPop()
 
-                    -- end
-
-                    
-                    -- UiPush()
-                    -- UiColor(0,0,0,0.25)
-                    -- UiTranslate(0, -rectH/2 + (vMargin + fontSize))
-                    -- UiRect(300, rectH)
-                    -- UiPop()
+                        -- end
 
                 UiPop()
 
         UiPop()
     end
+
+
+    -- -- Draw crosshairs
+    -- if desin.active() then
+    --     UiPush()
+
+    --         UiAlign('center middle')
+    --         UiTranslate(UiCenter(), UiMiddle())
+
+    --         local crosshairImage = 'img/crosshairs/crosshair_specific.png'
+    --         if desin.mode == desin.modes.general then
+    --             crosshairImage = 'img/crosshairs/crosshair_general.png'
+    --         end
+
+    --         UiImageBox(crosshairImage, 35, 35, 1, 1)
+
+    --     UiPop()
+    -- end
+
 
 end
 

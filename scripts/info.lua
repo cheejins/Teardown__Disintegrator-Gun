@@ -32,6 +32,10 @@ function initInfo()
 
         checkInfoClosed = function ()
 
+            if info.closed or info.getNeverShow() then
+                info.inputsPressed.count = 1
+            end
+
             if info.inputsPressed.count >= 1 then
                 return true
             end
@@ -44,7 +48,7 @@ function initInfo()
 end
 
 
-function manageInfoUi()
+function drawInfoWindow()
 
     dbw('info.closed', info.closed)
     dbw('info.neverShow', info.getNeverShow())
@@ -74,7 +78,6 @@ function manageInfoUi()
             UiAlign("center middle")
             UiImageBox('MOD/img/info.png', info.res.w * info.res.scale, info.res.h * info.res.scale, 1, 1)
             UiPop()
-
 
         end
     end
