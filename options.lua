@@ -1,6 +1,7 @@
 #include "main.lua"
 #include "scripts/info.lua"
 
+
 function init()
     initDesintegrator()
     initInfo()

@@ -41,7 +41,7 @@ function tick()
         desin.manageOutline()
         desin.manageToolAnimation()
 
-        shootDesintegrator()
+        manageDesintegrator()
         desintegrateShapes()
 
     end
@@ -85,6 +85,7 @@ function initDesintegrator()
     desin.objects = {}
     desinObjectMetatable = buildDesinObject(nil)
 
+    desin.unselectedShapes = {}
 
     desin.properties = {
         shapeVoxelLimit = 1000*2000,
@@ -431,6 +432,32 @@ function initDesintegrator()
     end
 
 
+    desin.highlightUnselectedShapes = function()
+
+        if not desin.isDesintegrating then
+
+            for i = 1, #desin.objects do
+
+                -- Reject shapes already in highlightedShapes table.
+                for i = 1, #desin.objects do
+                    QueryRejectShape(desin.objects[i].shape)
+                end
+
+                local sMin, sMax = GetShapeBounds(desin.objects[i].shape)
+                sMin = VecAdd(sMin, Vec(-1, -1, -1))
+                sMax = VecAdd(sMax, Vec(1, 1, 1))
+                local queriedShapes = QueryAabbShapes(sMin, sMax)
+
+                for j = 1, #queriedShapes do
+                    DrawDot(AabbGetShapeCenterPos(queriedShapes[j]), 0.2, 0.2, 1, 0, 0, 1)
+                end
+
+            end
+
+        end
+
+    end
+
 
     desin.message = {
         message = nil,
@@ -490,39 +517,12 @@ function initDesintegrator()
 end
 
 
-function shootDesintegrator()
-
-
-    -- local camTr = GetCameraTransform()
-    -- local hit, hitPos, hitShape, hitBody = RaycastFromTransform(camTr)
+function manageDesintegrator()
 
     -- Input.
     local didSelect = desin.input.didSelect()
     local didReset = desin.input.didReset()
     local didUndo = desin.input.didUndo()
-
-
-    -- if hit and not didSelect and desin.active() and not desin.isDesintegrating then -- Highlight shape (addable/removable)
-
-    --     -- Check if shape in objects table.
-    --     local isShapeInDesinObjects = false
-    --     for i = 1, #desin.objects do
-    --         if hitShape == desin.objects[i].shape then
-    --             isShapeInDesinObjects = true
-    --             break
-    --         end
-    --     end
-
-    --     if isShapeInDesinObjects then
-    --         -- DrawShapeOutline(hitShape, 1, 0, 0, 0.5) -- Red outline (shape is removable)
-    --         -- PointLight(hitPos, 1,0,0,0.5)
-    --     else
-    --         -- PointLight(hitPos, 1,1,1,0.5)
-    --         DrawShapeOutline(hitShape, 1, 1, 1, 1) -- White outline (shape is addable)
-    --     end
-
-    -- else
-
 
     if didSelect then -- Shoot desin
 
@@ -553,6 +553,7 @@ function shootDesintegrator()
         desin.undo()
 
     end
+
 
 end
 
@@ -635,6 +636,8 @@ function draw()
     drawInfoWindow()
 
     desin.message.draw()
+
+    desin.highlightUnselectedShapes()
 
     -- Draw dots at hit positions.
     if desin.isDesintegrating then
@@ -719,7 +722,7 @@ function draw()
 
 
     -- -- Draw crosshairs
-    -- if desin.active() then
+    -- if desin.active() and not desin.isDesintegrating then
     --     UiPush()
 
     --         UiAlign('center middle')

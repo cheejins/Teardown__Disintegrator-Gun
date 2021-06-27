@@ -73,21 +73,6 @@ function buildDesinObject(shape)
                 math.random(bbMin[3], bbMax[3]) + math.random() - math.random())
         end,
 
-        setHitDesintegrationPosition = function(table, index) -- Position close to a random previous hit position.
-            local randomHitIndex = math.random(1, #desinObject.spread.positions)
-            local randomHitPos = desinObject.spread.positions[randomHitIndex]
-
-            local mult = 2
-            local vecOffset = Vec(
-                (math.random() - math.random()) * mult,
-                (math.random() - math.random()) * mult,
-                (math.random() - math.random()) * mult)
-
-            table[index] = VecAdd(randomHitPos, vecOffset)
-
-
-        end,
-
         isShapeTooSmall = function()
             if desinObject.properties.shapeSize < 10 then return true end
             return false
