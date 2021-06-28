@@ -3,7 +3,7 @@
 
 
 function init()
-    initDesintegrator()
+    initDisintegrator()
     initInfo()
 end
 

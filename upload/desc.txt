@@ -2,7 +2,7 @@ Select objects and disintegrate them bit by bit.
 
 
 ABOUT THE LAG
-- There is a much better algorithm for disintegrating objects but due to the current scripting limitations, it's not possible to use right now. Once that scripting feature becomes possible, there should be a gigantic increase in performance (I'm estimating at least 10x performance).
+- There is a much more efficient algorithm for disintegrating objects, but due to the current scripting limitations of Teardown, it's not possible to use right now. Once that scripting feature becomes possible, there should be a gigantic increase in performance (I'm estimating at least 10x performance).
 
 
 INCOMPLETE DISINTEGRATION

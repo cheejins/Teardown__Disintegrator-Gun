@@ -113,14 +113,14 @@ function buildDisinObject(shape)
 
         for i = 1, #disinObject.spread.positions do -- Process disintegration step.
 
-            -- -- Reject all other shapes.
-            -- local queriedShapes = QueryAabbShapes(sMin, sMax)
-            -- for i = 1, #queriedShapes do
-            --     local shape = queriedShapes[i]
-            --     if shape ~= disinObject.shape then
-            --         QueryRejectShape(queriedShapes[i])
-            --     end
-            -- end
+            -- Reject all other shapes.
+            local queriedShapes = QueryAabbShapes(sMin, sMax)
+            for i = 1, #queriedShapes do
+                local shape = queriedShapes[i]
+                if shape ~= disinObject.shape then
+                    QueryRejectShape(queriedShapes[i])
+                end
+            end
 
             -- Set spread positions.
             local rcDist = disinObject.properties.holeSize * 4

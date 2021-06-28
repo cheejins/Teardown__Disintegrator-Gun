@@ -1,3 +1,8 @@
+2021-Jun-28
+- Added "Add mode" to only add objects to the disintegration list. 
+    -> Selector adds objects behind already selected objects.
+
+
 2021-Jun-27
 - Added unselected-object indicator (red dot in the center of nearby unselected objects)
 
