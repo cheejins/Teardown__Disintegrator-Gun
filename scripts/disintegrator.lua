@@ -2,53 +2,53 @@
 #include "../main.lua"
 
 
-function desintegrateShapes()
+function disintegrateShapes()
 
-    -- Desintigrate shapes.
-    if desin.isDesintegrating then
-        for i = 1, #desin.objects do
+    -- Disintigrate shapes.
+    if disin.isDisintegrating then
+        for i = 1, #disin.objects do
 
-            desintegrateShape(desin.objects[i])
+            disintegrateShape(disin.objects[i])
 
         end
     end
 
-    dbw('Desintegrating shapes', sfnTime())
-    dbw('Desin shapes count', #desin.objects)
+    dbw('Disintegrating shapes', sfnTime())
+    dbw('Disin shapes count', #disin.objects)
 
 end
 
 
-function desintegrateShape(desinObject)
+function disintegrateShape(disinObject)
 
-    if desinObject.start.done == false then
+    if disinObject.start.done == false then
 
-        desinObject.start.desintegrationStep()
-        desinObject.start.done = true
-        dbw('Desintegrating start done', sfnTime())
+        disinObject.start.disintegrationStep()
+        disinObject.start.done = true
+        dbw('Disintegrating start done', sfnTime())
 
     else
 
-        desinObject.spread.desintegrationStep()
-        sound.desintegrate.loop(AabbGetShapeCenterPos(desinObject.shape))
+        disinObject.spread.disintegrationStep()
+        sound.disintegrate.loop(AabbGetShapeCenterPos(disinObject.shape))
 
     end
 
 end
 
 
-function buildDesinObject(shape)
+function buildDisinObject(shape)
 
-    local desinObject = {}
+    local disinObject = {}
 
 
-    desinObject.shape = shape
-    desinObject.body = GetShapeBody(shape)
-    desinObject.done = false
+    disinObject.shape = shape
+    disinObject.body = GetShapeBody(shape)
+    disinObject.done = false
 
     local sx,sy,sz = GetShapeSize(shape)
 
-    desinObject.properties = {
+    disinObject.properties = {
         holeSize = 0.2,
         shapeSize = (sx+sy+sz),
         tooSmall = false, -- Shape too small = remove shape.
@@ -56,17 +56,17 @@ function buildDesinObject(shape)
         sizeDiv = 15, -- Sets number of points (shapeSize/sizeDiv)
     }
 
-    desinObject.functions = {
+    disinObject.functions = {
 
-        desintegratePos = function(pos, mult)
-            local hs = desinObject.properties.holeSize * (mult or 1)
+        disintegratePos = function(pos, mult)
+            local hs = disinObject.properties.holeSize * (mult or 1)
             MakeHole(pos, hs, hs, hs, hs)
 
-            local c = desin.colors.desintegrating
+            local c = disin.colors.disintegrating
             PointLight(pos, c[1], c[2], c[3], 0.25)
         end,
 
-        setRandomDesintegrationPosition = function(table, index, bbMin, bbMax) -- Random pos inside aabb
+        setRandomDisintegrationPosition = function(table, index, bbMin, bbMax) -- Random pos inside aabb
             table[index] = Vec(
                 math.random(bbMin[1], bbMax[1]) + math.random() - math.random(),
                 math.random(bbMin[2], bbMax[2]) + math.random() - math.random(),
@@ -74,63 +74,63 @@ function buildDesinObject(shape)
         end,
 
         isShapeTooSmall = function()
-            if desinObject.properties.shapeSize < 10 then return true end
+            if disinObject.properties.shapeSize < 10 then return true end
             return false
         end,
 
-        updateDesinObject = function()
+        updateDisinObject = function()
             local sx,sy,sz = GetShapeSize(shape)
-            desinObject.properties.shapeSize = (sx+sy+sz)
+            disinObject.properties.shapeSize = (sx+sy+sz)
         end,
     }
 
 
-    -- Sets the starting positions of the desintegrations.
-    desinObject.start = {
+    -- Sets the starting positions of the disintegrations.
+    disinObject.start = {
         points = 10,
         done = false,
     }
-    desinObject.spread = { -- Raycasting closest points after a desintegration step.
+    disinObject.spread = { -- Raycasting closest points after a disintegration step.
         positions = {}, -- A new position is set (closest raycasted point) after the old position has been processed.
         done = false,
     }
-    desinObject.hit = {
+    disinObject.hit = {
         positions = {},
     }
 
 
-    desinObject.spread.desintegrationStep = function()
+    disinObject.spread.disintegrationStep = function()
 
-        desinObject.functions.updateDesinObject()
+        disinObject.functions.updateDisinObject()
 
-        local sMin, sMax = GetShapeBounds(desinObject.shape)
+        local sMin, sMax = GetShapeBounds(disinObject.shape)
 
-        -- Set number of desintegration points.
-        desinObject.spread.points = math.floor((sx+sy+sz)/desinObject.properties.sizeDiv) + 3
-        dbw('desinObject shapeSize', desinObject.spread.points)
+        -- Set number of disintegration points.
+        disinObject.spread.points = math.floor((sx+sy+sz)/disinObject.properties.sizeDiv) + 3
+        dbw('disinObject shapeSize', disinObject.spread.points)
 
-        desinObject.hit.positions = {} -- Reset each step.
+        disinObject.hit.positions = {} -- Reset each step.
 
-        for i = 1, #desinObject.spread.positions do -- Process desintegration step.
+        for i = 1, #disinObject.spread.positions do -- Process disintegration step.
 
             -- -- Reject all other shapes.
             -- local queriedShapes = QueryAabbShapes(sMin, sMax)
             -- for i = 1, #queriedShapes do
             --     local shape = queriedShapes[i]
-            --     if shape ~= desinObject.shape then
+            --     if shape ~= disinObject.shape then
             --         QueryRejectShape(queriedShapes[i])
             --     end
             -- end
 
             -- Set spread positions.
-            local rcDist = desinObject.properties.holeSize * 4
-            local rcHit, rcHitPos, n, rcShape = QueryClosestPoint(desinObject.spread.positions[i], rcDist)
-            if rcHit and rcShape == desinObject.shape then
+            local rcDist = disinObject.properties.holeSize * 4
+            local rcHit, rcHitPos, n, rcShape = QueryClosestPoint(disinObject.spread.positions[i], rcDist)
+            if rcHit and rcShape == disinObject.shape then
 
                 local isMaterialUnbreakable = IsMaterialUnbreakable(GetShapeMaterialAtPosition(rcShape, rcHitPos))
                 if isMaterialUnbreakable then
 
-                    desinObject.functions.setRandomDesintegrationPosition(desinObject.spread.positions, i, sMin, sMax)
+                    disinObject.functions.setRandomDisintegrationPosition(disinObject.spread.positions, i, sMin, sMax)
 
                 else
 
@@ -140,51 +140,51 @@ function buildDesinObject(shape)
                         math.random()/div - math.random()/div,
                         math.random()/div - math.random()/div)
 
-                    desinObject.spread.positions[i] = VecAdd(rcHitPos, rdmVec) -- Set new spread position at closest point.
+                    disinObject.spread.positions[i] = VecAdd(rcHitPos, rdmVec) -- Set new spread position at closest point.
 
-                    table.insert(desinObject.hit.positions, rcHitPos) -- Draws dots only at hit points.
+                    table.insert(disinObject.hit.positions, rcHitPos) -- Draws dots only at hit points.
 
                 end
 
             else
-                desinObject.functions.setRandomDesintegrationPosition(desinObject.spread.positions, i, sMin, sMax) -- no hit
+                disinObject.functions.setRandomDisintegrationPosition(disinObject.spread.positions, i, sMin, sMax) -- no hit
             end
 
             local holeSizeMult = gtZero(math.random() - 0.8) + 1
-            desinObject.functions.desintegratePos(desinObject.spread.positions[i], holeSizeMult) -- Pos desintegration.
+            disinObject.functions.disintegratePos(disinObject.spread.positions[i], holeSizeMult) -- Pos disintegration.
         end
     end
 
 
-    desinObject.start.desintegrationStep = function() -- Set the initial raycast hit positions from the perimeter of the shape aabb.
+    disinObject.start.disintegrationStep = function() -- Set the initial raycast hit positions from the perimeter of the shape aabb.
 
-        -- Set number of desintegration points.
-        local sMin, sMax = GetShapeBounds(desinObject.shape)
+        -- Set number of disintegration points.
+        local sMin, sMax = GetShapeBounds(disinObject.shape)
         local sx,sy,sz = GetShapeSize(shape)
-        desinObject.start.points = math.floor((sx+sy+sz)/desinObject.properties.sizeDiv) + 3
+        disinObject.start.points = math.floor((sx+sy+sz)/disinObject.properties.sizeDiv) + 3
 
         -- Limit number of points for performance.
-        if desinObject.start.points > desinObject.properties.maxPoints then
-            desinObject.start.points = desinObject.properties.maxPoints
+        if disinObject.start.points > disinObject.properties.maxPoints then
+            disinObject.start.points = disinObject.properties.maxPoints
         end
 
         -- Set starting spread positions.
-        for i = 1, desinObject.start.points do
-            local position = desinObject.functions.setRandomDesintegrationPosition(desinObject.spread.positions, i, sMin, sMax)
-            table.insert(desinObject.spread.positions, position)
+        for i = 1, disinObject.start.points do
+            local position = disinObject.functions.setRandomDisintegrationPosition(disinObject.spread.positions, i, sMin, sMax)
+            table.insert(disinObject.spread.positions, position)
         end
-        dbw('desinObject.start.points', desinObject.start.points)
+        dbw('disinObject.start.points', disinObject.start.points)
 
         -- Initial spread step.
-        desinObject.spread.desintegrationStep()
+        disinObject.spread.disintegrationStep()
 
         -- Set starting hit positions.
-        for i = 1, desinObject.start.points do 
-            table.insert(desinObject.hit.positions, desinObject.spread.positions[i])
+        for i = 1, disinObject.start.points do 
+            table.insert(disinObject.hit.positions, disinObject.spread.positions[i])
         end
 
     end
 
 
-    return desinObject
+    return disinObject
 end

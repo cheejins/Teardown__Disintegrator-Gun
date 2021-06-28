@@ -1,5 +1,9 @@
 Select objects and disintegrate them bit by bit.
 
-Note:
-- Large objects cause lag. I'm working on improving efficiency.
-- Due to the scripting limitations of Teardown at the moment, the object does not disintegrate completely. Pieces that break off do not automatically add to the disintegration object list (again, scripting limitation). I am looking for a workaround for this.
+
+ABOUT THE LAG
+- There is a much better algorithm for disintegrating objects but due to the current scripting limitations, it's not possible to use right now. Once that scripting feature becomes possible, there should be a gigantic increase in performance (I'm estimating at least 10x performance).
+
+
+INCOMPLETE DISINTEGRATION
+- Due to another scripting limitation of Teardown (at the moment), the object does not disintegrate completely. Pieces that break off do not automatically get added to the disintegration object list (again, scripting limitation regarding the ability to the references of the broken off pieces). I am looking for a workaround for this.

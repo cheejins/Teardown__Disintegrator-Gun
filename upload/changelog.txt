@@ -1,3 +1,7 @@
+2021-Jun-27
+- Added unselected-object indicator (red dot in the center of nearby unselected objects)
+
+
 2021-Jun-26
 - Added 'Selection Modes' panel to info window.
 - Fixed the tool not temporarily deactivating while the info window is open.
