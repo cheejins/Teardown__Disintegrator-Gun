@@ -1,6 +1,5 @@
 #include "../main.lua"
 
-
 local neverShow = { -- Auto show on updates.
     'savegame.mod.info.neverShow',
     'savegame.mod.info.neverShow.2021.06.24',
@@ -47,6 +46,15 @@ function initInfo()
 
     }
 
+end
+
+
+function getInfo()
+    return info
+end
+
+function getNeverShow()
+    return neverShow
 end
 
 

@@ -104,6 +104,9 @@
         local mi, ma = GetShapeBounds(shape)
         return VecLerp(mi,ma,0.5)
     end
+    function AabbGetCenterPos(min ,max)
+        return VecLerp(min,max,0.5)
+    end
 
 
 

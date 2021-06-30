@@ -1,10 +1,7 @@
 name = Disintegrator Gun
 author = Cheejins
-description = Select objects and disintegrate them bit by bit.
+description = [noupload]Select objects and disintegrate them bit by bit.
 tags = Tool
-
-noupload
-[noupload]
 
 # Available tags (comma-separated):
 # Map      - A custom map with no particular gameplay

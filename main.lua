@@ -3,11 +3,12 @@
 #include "scripts/info.lua"
 
 
+
 -- (Debug mode)
 db = false
 -- db = true
-dbw = function(name, value) if db then DebugWatch(name, value) end end
-dbp = function(str) if db then DebugPrint(str) end end
+function dbw(name, value) if db then DebugWatch(name, value) end end
+function dbp(str) if db then DebugPrint(str) end end
 
 
 function init()
@@ -40,6 +41,7 @@ function tick()
 
         disin.manageColor()
         disin.manageOutline()
+        disin.highlightUnselectedShapes()
         disin.manageToolAnimation()
 
         manageDisintegrator()
@@ -451,27 +453,94 @@ function initDisintegrator()
     end
 
 
+    -- disin.highlightUnselectedShapes = function()
+
+        -- disin.unselectedShapes = {}
+
+        -- if not disin.isDisintegrating then
+
+        --     for i = 1, #disin.objects do
+
+        --         for j = 1, #disin.objects do
+        --             QueryRejectShape(disin.objects[j].shape)
+        --         end
+
+        --         local sMin, sMax = GetShapeBounds(disin.objects[i].shape)
+        --         sMin = VecAdd(sMin, Vec(-1, -1, -1))
+        --         sMax = VecAdd(sMax, Vec(1, 1, 1))
+        --         local queriedShapes = QueryAabbShapes(sMin, sMax)
+
+        --         for j = 1, #queriedShapes do
+        --             table.insert(disin.unselectedShapes, queriedShapes[j])
+        --         end
+
+        --     end
+
+
+        --     -- Draw disin.unselectedShapes indicators.
+        --     for i = 1, #disin.unselectedShapes do
+        --         DrawDot(AabbGetShapeCenterPos(disin.unselectedShapes[i]), 0.2, 0.2, 1, 0, 0, 1)
+        --     end
+
+        -- end
+
+    -- end
+
+
     disin.highlightUnselectedShapes = function()
+
+        disin.unselectedShapes = {}
 
         if not disin.isDisintegrating then
 
+            local sMin, sMax
+            if #disin.objects >= 1 then
+                sMin, sMax = GetShapeBounds(disin.objects[1].shape)
+            end
+
+            -- Choose min and max points.
             for i = 1, #disin.objects do
 
-                -- Reject shapes already in highlightedShapes table.
-                for i = 1, #disin.objects do
-                    QueryRejectShape(disin.objects[i].shape)
+                local obj = disin.objects[i]
+                local mi, ma = GetShapeBounds(obj.shape)
+
+                -- Min point
+                for i = 1, 3 do
+                    if mi[i] < sMin[i] then
+                        sMin[i] = mi[i]
+                    end
                 end
 
-                local sMin, sMax = GetShapeBounds(disin.objects[i].shape)
-                sMin = VecAdd(sMin, Vec(-1, -1, -1))
-                sMax = VecAdd(sMax, Vec(1, 1, 1))
-                local queriedShapes = QueryAabbShapes(sMin, sMax)
-
-                for j = 1, #queriedShapes do
-                    DrawDot(AabbGetShapeCenterPos(queriedShapes[j]), 0.2, 0.2, 1, 0, 0, 1)
+                -- Max point
+                for i = 1, 3 do
+                    if ma[i] > sMax[i] then
+                        sMax[i] = ma[i]
+                    end
                 end
 
             end
+
+            -- Reject selected shapes.
+            for i = 1, #disin.objects do
+                QueryRejectShape(disin.objects[i].shape)
+            end
+
+            local b = 1 -- Buffer.
+            sMin = VecAdd(sMin, Vec(-b, -b, -b))
+            sMax = VecAdd(sMax, Vec(b, b, b))
+            local queriedShapes = QueryAabbShapes(sMin, sMax)
+
+            -- Number of dots based on number of queried shapes.
+            local spriteMinSize = #queriedShapes/100
+
+            for i = 1, #queriedShapes do
+                if GetShapeVoxelCount(queriedShapes[i]) > spriteMinSize then
+                    DrawDot(AabbGetShapeCenterPos(queriedShapes[i]), 0.2, 0.2, 1, 0, 0)
+                end
+            end
+
+            dbw('#queriedShapes', #queriedShapes)
+            dbw('spriteMinSize', spriteMinSize)
 
         end
 
@@ -662,7 +731,7 @@ function draw()
 
     disin.message.draw()
 
-    disin.highlightUnselectedShapes()
+    -- disin.highlightUnselectedShapes()
 
     -- Draw dots at hit positions.
     if disin.isDisintegrating then

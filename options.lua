@@ -7,6 +7,8 @@ function init()
     initInfo()
 end
 
+
+
 local options = {
 
     manageRestoredInfoWindowSection = function()
@@ -29,7 +31,8 @@ local options = {
 
         UiPop()
 
-    end
+    end,
+
 }
 
 function draw()
