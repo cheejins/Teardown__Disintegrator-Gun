@@ -1,13 +1,13 @@
 #include "scripts/disintegrator.lua"
 #include "scripts/utility.lua"
 #include "scripts/info.lua"
-
+#include "umf/umf_full.lua"
 
 
 -- (Debug mode)
 db = false
 -- db = true
-function dbw(name, value) if db then DebugWatch(name, value) end end
+function dbw(str, value) if db then DebugWatch(str, value) end end
 function dbp(str) if db then DebugPrint(str) end end
 
 
@@ -855,3 +855,6 @@ end
 function updateGameTable()
     game = { ppos = GetPlayerTransform().pos }
 end
+
+
+UpdateQuickloadPatch()
