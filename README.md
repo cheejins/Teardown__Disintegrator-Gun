@@ -6,6 +6,10 @@
 
 ## Media
 * [Demonstration Video](https://www.youtube.com/watch?v=_lC_RJ8JVnw)
+* [Youtuber Fynnpire playing the mod](https://youtu.be/ICyXc5I8yxw?t=148)
+
+
+
 
 <br>
   
