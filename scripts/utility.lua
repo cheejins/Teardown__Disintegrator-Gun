@@ -109,6 +109,29 @@
     end
 
 
+--[[OBB]]
+
+    function ObbDrawShape(shape)
+
+        local shapeTr = GetShapeWorldTransform(shape)
+        local sx, sy, sz = GetShapeSize(shape)
+        local shapeDim = VecScale(Vec(sx, sy, sz), 0.1)
+        local maxTr = Transform(TransformToParentPoint(shapeTr, shapeDim), shapeTr.rot)
+
+        for i = 1, 3 do
+
+            local vec = Vec(0,0,0)
+
+            vec[i] = shapeDim[i]
+
+            DebugLine(shapeTr.pos, maxTr.pos)
+            DebugLine(shapeTr.pos, TransformToParentPoint(shapeTr, vec), 0,1,0, 1)
+            DebugLine(maxTr.pos, TransformToParentPoint(maxTr, VecScale(vec, -1)), 1,0,0, 1)
+
+        end
+
+    end
+
 
 --[[TABLES]]
     function tableSwapIndex(t, i1, i2)

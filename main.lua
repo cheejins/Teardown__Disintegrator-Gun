@@ -14,11 +14,11 @@ function dbp(str) if db then DebugPrint(str) end end
 
 function init()
 
+    initInfo()
     updateGameTable()
     globalBody = FindBodies('', true)[1]
 
     initDisintegrator()
-    initInfo()
 
     initSounds()
 
@@ -55,7 +55,7 @@ end
 
 function initDisintegrator()
 
-    disin = {}
+    TOOL = {}
 
 
     TOOL.objects = {}
@@ -351,7 +351,7 @@ function initDisintegrator()
 
             local removeShape = false
 
-            local smallShape = TOOL.objects[i].functions.isShapeTooSmall()
+            local smallShape = TOOL.objects[i].isShapeTooSmall()
             local disintegrating = TOOL.isDisintegrating
 
             if smallShape and disintegrating then -- Small shape to remove.

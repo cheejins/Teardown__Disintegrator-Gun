@@ -20,7 +20,7 @@ end
 
 function disintegrateShape(disinObject)
 
-    if disinObject.start.done == false then
+    if not disinObject.start.done then
 
         disinObject.start.disintegrationStep()
         disinObject.start.done = true
@@ -36,14 +36,11 @@ function disintegrateShape(disinObject)
 end
 
 
-
 function createShape3DArray(shape)
 
     local x,y,z = GetShapeSize(shape)
 
 end
-
-
 
 
 

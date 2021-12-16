@@ -6,6 +6,7 @@ function buildDisinObject(shape)
     disinObject.shape = shape
     disinObject.body = GetShapeBody(shape)
     disinObject.done = false
+
     local sx, sy, sz = GetShapeSize(shape)
 
     disinObject.holeSize = 0.2
@@ -13,6 +14,7 @@ function buildDisinObject(shape)
     disinObject.tooSmall = false -- Shape too small = remove shape.
     disinObject.maxPoints = 30
     disinObject.sizeDiv = 15 -- Sets number of points (shapeSize/sizeDiv)
+
 
 
     disinObject.disintegratePos = function(pos, mult)
@@ -26,9 +28,9 @@ function buildDisinObject(shape)
     disinObject.setRandomDisintegrationPosition =
         function(table, index, bbMin, bbMax) -- Random pos inside aabb
             table[index] = Vec(
-                               math.random(bbMin[1], bbMax[1]) + math.random() - math.random(),
-                               math.random(bbMin[2], bbMax[2]) + math.random() - math.random(),
-                               math.random(bbMin[3], bbMax[3]) + math.random() - math.random())
+                math.random(bbMin[1], bbMax[1]) + math.random() - math.random(),
+                math.random(bbMin[2], bbMax[2]) + math.random() - math.random(),
+                math.random(bbMin[3], bbMax[3]) + math.random() - math.random())
         end
 
     disinObject.isShapeTooSmall = function()
@@ -37,8 +39,12 @@ function buildDisinObject(shape)
     end
 
     disinObject.updateDisinObject = function()
+
         local sx, sy, sz = GetShapeSize(shape)
         disinObject.shapeSize = (sx + sy + sz)
+
+        ObbDrawShape(shape)
+
     end
 
     disinObject.hit = {
@@ -52,7 +58,7 @@ function buildDisinObject(shape)
     disinObject.start = {}
 
     disinObject.start.points = 10
-    --. disinObject.start.done = false
+    disinObject.start.done = false
 
     disinObject.start.disintegrationStep = function() -- Set the initial raycast hit positions from the perimeter of the shape aabb.
 
@@ -92,7 +98,7 @@ function buildDisinObject(shape)
     disinObject.spread = {}
 
     disinObject.spread.positions = {} -- A new position is set (closest raycasted point) after the old position has been processed.
-    --. disinObject.spread.done = false
+    disinObject.spread.done = false
 
     disinObject.spread.disintegrationStep = function()
 
