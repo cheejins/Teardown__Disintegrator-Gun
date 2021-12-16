@@ -2,55 +2,30 @@ function buildDisinObject(shape)
 
     local disinObject = {}
 
+
     -- ! Base properties.
     disinObject.shape = shape
     disinObject.body = GetShapeBody(shape)
+
+    disinObject.shapeTr = GetShapeWorldTransform(shape)
+    disinObject.shapeTrActual = GetShapeWorldTransform(shape) -- Places the shape
     disinObject.done = false
 
     local sx, sy, sz = GetShapeSize(shape)
 
     disinObject.holeSize = 0.2
-    disinObject.shapeSize = (sx + sy + sz)
+    disinObject.shapeSize = sx + sy + sz
     disinObject.tooSmall = false -- Shape too small = remove shape.
     disinObject.maxPoints = 30
-    disinObject.sizeDiv = 15 -- Sets number of points (shapeSize/sizeDiv)
+    disinObject.sizeDiv = 10 -- Sets number of points (shapeSize/sizeDiv)
 
-
-
-    disinObject.disintegratePos = function(pos, mult)
-        local hs = disinObject.holeSize * (mult or 1)
-        MakeHole(pos, hs, hs, hs, hs)
-
-        local c = TOOL.colors.disintegrating
-        PointLight(pos, c[1], c[2], c[3], 0.25)
-    end
-
-    disinObject.setRandomDisintegrationPosition =
-        function(table, index, bbMin, bbMax) -- Random pos inside aabb
-            table[index] = Vec(
-                math.random(bbMin[1], bbMax[1]) + math.random() - math.random(),
-                math.random(bbMin[2], bbMax[2]) + math.random() - math.random(),
-                math.random(bbMin[3], bbMax[3]) + math.random() - math.random())
-        end
-
-    disinObject.isShapeTooSmall = function()
-        if disinObject.shapeSize < 10 then return true end
-        return false
-    end
-
-    disinObject.updateDisinObject = function()
-
-        local sx, sy, sz = GetShapeSize(shape)
-        disinObject.shapeSize = (sx + sy + sz)
-
-        ObbDrawShape(shape)
-
-    end
+    disinObject.usedPositions = {}
 
     disinObject.hit = {
         positions = {},
         lastPos = {}
     }
+
 
 
 
@@ -65,30 +40,15 @@ function buildDisinObject(shape)
         -- Set number of disintegration points.
         local sMin, sMax = GetShapeBounds(disinObject.shape)
         local sx, sy, sz = GetShapeSize(shape)
-        disinObject.start.points = math.floor((sx + sy + sz) /
-                                                    disinObject.sizeDiv) + 3
+        -- disinObject.start.points = math.floor(sx + sy + sz) / disinObject.sizeDiv
+        disinObject.start.points = 1
 
-        -- Limit number of points for performance.
-        if disinObject.start.points > disinObject.maxPoints then
-            disinObject.start.points = disinObject.maxPoints
-        end
-
-        -- Set starting spread positions.
-        for i = 1, disinObject.start.points do
-            local position = disinObject.setRandomDisintegrationPosition(
-                                    disinObject.spread.positions, i, sMin, sMax)
+        for i = 1, disinObject.start.points do -- Set starting spread positions.
+            local position = disinObject.setRandomDisintegrationPosition(disinObject.spread.positions, i, sMin, sMax)
             table.insert(disinObject.spread.positions, position)
         end
+
         dbw('disinObject.start.points', disinObject.start.points)
-
-        -- Initial spread step.
-        disinObject.spread.disintegrationStep()
-
-        -- Set starting hit positions.
-        for i = 1, disinObject.start.points do
-            table.insert(disinObject.hit.positions,
-                            disinObject.spread.positions[i])
-        end
 
     end
 
@@ -97,7 +57,7 @@ function buildDisinObject(shape)
     -- ! Raycasting closest points after a disintegration step.
     disinObject.spread = {}
 
-    disinObject.spread.positions = {} -- A new position is set (closest raycasted point) after the old position has been processed.
+    disinObject.spread.positions = {} -- Current positions being disintegrated.
     disinObject.spread.done = false
 
     disinObject.spread.disintegrationStep = function()
@@ -107,40 +67,37 @@ function buildDisinObject(shape)
         local sMin, sMax = GetShapeBounds(disinObject.shape)
 
         -- Set number of disintegration points.
-        disinObject.spread.points = math.floor((sx + sy + sz) /
-                                                   disinObject.sizeDiv) + 3
+        -- disinObject.spread.points = math.floor((sx + sy + sz) / disinObject.sizeDiv) + 3
+        disinObject.spread.points = 2
         dbw('disinObject shapeSize', disinObject.spread.points)
 
-        disinObject.hit.positions = {} -- Reset each step.
 
-        for i = 1, #disinObject.spread.positions do -- Process disintegration step.
 
-            -- -- Reject all other shapes.
-            -- local queriedShapes = QueryAabbShapes(sMin, sMax)
-            -- for i = 1, #queriedShapes do
-            --     local shape = queriedShapes[i]
-            --     if shape ~= disinObject.shape then
-            --         QueryRejectShape(queriedShapes[i])
-            --     end
-            -- end
+        disinObject.hit.positions = {} -- Reset spread points each step to prevent disintegrating the same pos.
+
+        for i = 1, #disinObject.spread.positions do -- Each disin pos.
+
+            -- Reject all other shapes.
+            local queriedShapes = QueryAabbShapes(sMin, sMax)
+            for i = 1, #queriedShapes do
+                local shape = queriedShapes[i]
+                if shape ~= disinObject.shape then
+                    QueryRejectShape(queriedShapes[i])
+                end
+            end
 
             -- Set spread positions.
-            local rcDist = disinObject.holeSize * 4
-            local rcHit, rcHitPos, n, rcShape = QueryClosestPoint(
-                                                    disinObject.spread.positions[i],
-                                                    rcDist)
+            local rcHit, rcHitPos, n, rcShape = QueryClosestPoint(disinObject.spread.positions[i], disinObject.holeSize * 4)
+
             if rcHit and rcShape == disinObject.shape then
 
-                local isMaterialUnbreakable =
-                    IsMaterialUnbreakable(
-                        GetShapeMaterialAtPosition(rcShape, rcHitPos))
-                if isMaterialUnbreakable then
+                if IsMaterialUnbreakable(GetShapeMaterialAtPosition(rcShape, rcHitPos)) then
 
-                    disinObject.setRandomDisintegrationPosition(
-                        disinObject.spread.positions, i, sMin, sMax) -- Cannot break material.
+                    disinObject.setRandomDisintegrationPosition(disinObject.spread.positions, i, sMin, sMax) -- Cannot break material.
 
                 else
 
+                    -- Minor direction change
                     local div = 80
                     local rdmVec = Vec(
                                        math.random() / div - math.random() / div,
@@ -154,16 +111,65 @@ function buildDisinObject(shape)
                 end
 
             else
-                disinObject.setRandomDisintegrationPosition(disinObject.spread
-                                                                .positions, i,
-                                                            sMin, sMax) -- no hit
+
+                -- table.insert(disinObject.usedPositions, TransformToLocalPoint(disinObject.shapeTr, disinObject.spread.positions[i]))
+
+                disinObject.setRandomDisintegrationPosition(disinObject.spread.positions, i, sMin, sMax) -- no hit
+
+                -- dbw('#disinObject.usedPositions', #disinObject.usedPositions)
+
             end
 
-            local holeSizeMult = gtZero(math.random() - 0.8) + 1
-            disinObject.disintegratePos(disinObject.spread.positions[i],
-                                        holeSizeMult) -- Pos disintegration.
+            -- local holeSizeMult = gtZero(math.random() - 0.8) + 1
+            local holeSizeMult = 1
+            disinObject.disintegratePos(disinObject.spread.positions[i], holeSizeMult) -- Pos disintegration.
+
         end
+
     end
+
+
+
+
+
+
+    disinObject.setRandomDisintegrationPosition = function(table, index, bbMin, bbMax) -- Random pos inside aabb
+
+        local randomPos = Vec()
+
+        for i = 1, 3 do
+            randomPos[i] = math.random(
+                math.floor(bbMin[i]),
+                math.floor(bbMax[i]))
+
+            -- VecPrint(randomPos)
+        end
+
+        table[index] = randomPos
+    end
+
+    disinObject.disintegratePos = function(pos, mult)
+        local hs = disinObject.holeSize * (mult or 1)
+        MakeHole(pos, hs, hs, hs, hs)
+
+        local c = Tool.colors.disintegrating
+        PointLight(pos, c[1], c[2], c[3], 0.25)
+    end
+
+    disinObject.isShapeTooSmall = function()
+        if disinObject.shapeSize < 10 then return true end
+        return false
+    end
+
+    disinObject.updateDisinObject = function()
+
+        -- disinObject.shapeTr = GetShapeWorldTransform(disinObject.shape)
+
+        local sx, sy, sz = GetShapeSize(shape)
+        disinObject.shapeSize = (sx + sy + sz)
+
+    end
+
 
     return disinObject
 end

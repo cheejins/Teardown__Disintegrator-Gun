@@ -61,7 +61,7 @@ function drawInfoWindow()
     dbw('info.closed', info.closed)
     dbw('info.neverShow', info.getNeverShow())
 
-    if TOOL.tool.active() then
+    if Tool.tool.active() then
         if not info.closed then
 
 
