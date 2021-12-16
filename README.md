@@ -6,6 +6,10 @@
 
 ## Media
 * [Demonstration Video](https://www.youtube.com/watch?v=_lC_RJ8JVnw)
+* [Youtuber Fynnpire playing the mod](https://youtu.be/ICyXc5I8yxw?t=148)
+
+
+
 
 <br>
   
@@ -15,7 +19,7 @@ Main script files:
   * Main functionality control center for the mod
   * Contains tool logic and sound functions.
   
-* [scripts/desintegrator.lua](https://github.com/cheejins/Teardown-Mod---Desintigrator-Gun/blob/main/scripts/desintegrator.lua)
+* [scripts/desintegrator.lua](https://github.com/cheejins/Teardown-Mod---Disintigrator-Gun/blob/aade129531bb59f444d6263a5339e38875c7ed16/scripts/disintegrator.lua)
   * Contains the main desintegration logic and desintegration object constructor.
   
 * [scripts/info.lua](https://github.com/cheejins/Teardown-Mod---Desintigrator-Gun/blob/main/scripts/info.lua)
