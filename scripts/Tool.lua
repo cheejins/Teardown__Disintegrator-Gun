@@ -5,7 +5,7 @@ function initTool()
     Tool = {}
 
     Tool.objects = {}
-    disinObjectMetatable = buildDisinObject(nil)
+    objMetatable = buildDisinObject(nil)
 
 
     Tool.tool = {
@@ -166,9 +166,9 @@ function initTool()
 
     Tool.insert = {}
     Tool.insert.shape = function(shape)
-        local disinObject = buildDisinObject(shape) -- Insert valid disin object.
-        setmetatable(disinObject, disinObjectMetatable)
-        table.insert(Tool.objects, disinObject)
+        local obj = buildDisinObject(shape) -- Insert valid disin object.
+        setmetatable(obj, objMetatable)
+        table.insert(Tool.objects, obj)
         dbp('Shape added. Voxels: ' .. GetShapeVoxelCount(shape) .. ' ... ' .. sfnTime())
     end
     Tool.insert.processShape = function(shape)
@@ -328,8 +328,8 @@ function initTool()
 
     end
     -- Mark object for removal. Removed in Tool.manageObjectRemoval()
-    Tool.setObjectToBeRemoved = function(disinObject)
-        disinObject.remove = true
+    Tool.setObjectToBeRemoved = function(obj)
+        obj.remove = true
     end
 
 

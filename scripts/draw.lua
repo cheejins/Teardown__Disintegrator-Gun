@@ -56,8 +56,8 @@ function drawToolText_Mode()
                         UiText(voxText)
 
                         -- Disintegration objects count.
-                        local disinObjects = #Tool.objects
-                        -- local c = (30 / (disinObjects + 1)) ^ 2
+                        local obj = #Tool.objects
+                        -- local c = (30 / (obj + 1)) ^ 2
                         -- UiColor(1, c, c, a)
 
                         local c = 1
@@ -67,7 +67,7 @@ function drawToolText_Mode()
                         UiColor(1, c, c, a)
 
                         UiTranslate(0, -vMargin)
-                        local objText = 'OBJECTS: ' .. sfnCommas(disinObjects)
+                        local objText = 'OBJECTS: ' .. sfnCommas(obj)
                         UiText(objText)
 
                     UiPop() end

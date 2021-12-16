@@ -10,11 +10,6 @@
 
 --[[
 
-    Script layout
-
-        > Main
-            >
-
     Select obj
 
         > create new disin obj
@@ -35,17 +30,25 @@
     Disintegrate
 
         > start
+
             > set random points (do not need to be valid)
             > do not disintegrate yet
             > used points = start points.
+            > start points are already set but did not disitegrate yet.
+                > usedPoints and hit points are still {}
 
         > spread
-            > start points are already set but did not disitegrate yet.
 
-            > each disin point will check the shape's used points
-                > if
+            > random rel points will round to scale
+                > lwh / scale
+                > random will produce points at that scale aligned with the obb
 
-            > if the disin point ==
+            > each spread point will check the shape's used rel points
+                > while point is the same, set a new random one.
+                > if point is unique, QCP and disin
+                    > if hit, add the spread point to used rel points
+                    > if no hit, do nothing. new point check next disin step
+
 
     RandomPos
 
@@ -124,11 +127,11 @@ function disinTest()
 
     for i = 1, #Tool.objects do
 
-        local disinObject = Tool.objects[i]
+        local obj = Tool.objects[i]
 
-        for j = 1, #disinObject.usedPositions do
-            DrawDot(TransformToParentPoint(disinObject.shapeTr, disinObject.usedPositions[j]), 0.2,0.2, 1,0,1, 1)
-        end
+        -- for j = 1, #obj.usedRelPositions do
+        --     DrawDot(TransformToParentPoint(obj.shapeTr, obj.usedRelPositions[j]), 0.2,0.2, 1,0,1, 1)
+        -- end
 
         if db then ObbDrawShape(shape) end
 
