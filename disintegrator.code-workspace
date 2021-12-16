@@ -1,0 +1,19 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": ".."
+		}
+	],
+	"settings": {
+		"Lua.diagnostics.disable": [
+			"undefined-global",
+			"lowercase-global"
+		],
+		"Lua.diagnostics.globals": [
+			"createShape3DArray"
+		]
+	}
+}

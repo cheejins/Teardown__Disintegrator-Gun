@@ -1,4 +1,5 @@
 #include "scripts/disintegrator.lua"
+#include "scripts/disintegrationObjects.lua"
 #include "scripts/utility.lua"
 #include "scripts/info.lua"
 #include "umf/umf_full.lua"
@@ -30,22 +31,22 @@ function tick()
 
         updateGameTable()
 
-        disin.manageSelectionMode()
-        disin.manageAddModeToggle()
-        dbw('Disin mode', disin.mode)
+        TOOL.manageSelectionMode()
+        TOOL.manageAddModeToggle()
+        TOOL.manageObjectRemoval()
+        TOOL.manageIsDisintegrating()
 
-        disin.manageIsDisintegrating()
-        dbw('disin.isDisintegrating', disin.isDisintegrating)
-
-        disin.manageObjectRemoval()
-
-        disin.manageColor()
-        disin.manageOutline()
-        disin.highlightUnselectedShapes()
-        disin.manageToolAnimation()
+        TOOL.manageColor()
+        TOOL.manageOutline()
+        TOOL.manageToolAnimation()
+        -- TOOL.highlightUnselectedShapes() -- Laggy
 
         manageDisintegrator()
         disintegrateShapes()
+
+
+        dbw('Disin mode', TOOL.mode)
+        dbw('TOOL.isDisintegrating', TOOL.isDisintegrating)
 
     end
 
@@ -57,11 +58,11 @@ function initDisintegrator()
     disin = {}
 
 
-    disin.objects = {}
+    TOOL.objects = {}
     disinObjectMetatable = buildDisinObject(nil)
 
 
-    disin.tool = {
+    TOOL.tool = {
 
         setup = {
             name = 'disintegrator',
@@ -70,42 +71,42 @@ function initDisintegrator()
         },
 
         active = function(includeVehicle) -- Player is wielding the disintegrator.
-            return GetString('game.player.tool') == disin.tool.setup.name 
+            return GetString('game.player.tool') == TOOL.tool.setup.name
                 and (GetPlayerVehicle() == 0 and (includeVehicle or true))
         end,
 
         input = {
 
-            didSelect = function() return InputPressed('lmb') and disin.tool.active() end,
-            didToggleDisintegrate = function() return InputPressed('rmb') and disin.tool.active() end,
-            didReset = function() return InputPressed('r') and disin.tool.active() end,
-            didChangeMode = function() return InputPressed('c') and disin.tool.active() end,
-            didUndo = function() return InputPressed('z') and disin.tool.active() end,
+            didSelect = function() return InputPressed('lmb') and TOOL.tool.active() end,
+            didToggleDisintegrate = function() return InputPressed('rmb') and TOOL.tool.active() end,
+            didReset = function() return InputPressed('r') and TOOL.tool.active() end,
+            didChangeMode = function() return InputPressed('c') and TOOL.tool.active() end,
+            didUndo = function() return InputPressed('z') and TOOL.tool.active() end,
 
-            didToggleAddMode = function() return InputPressed('alt') and disin.tool.active() end,
+            didToggleAddMode = function() return InputPressed('alt') and TOOL.tool.active() end,
 
         },
 
         init = function(enabled)
-            RegisterTool(disin.tool.setup.name, disin.tool.setup.title, disin.tool.setup.voxPath)
-            SetBool('game.tool.'..disin.tool.setup.name..'.enabled', enabled or true)
+            RegisterTool(TOOL.tool.setup.name, TOOL.tool.setup.title, TOOL.tool.setup.voxPath)
+            SetBool('game.tool.'..TOOL.tool.setup.name..'.enabled', enabled or true)
         end,
 
     }
 
     -- Init
-    disin.tool.init()
+    TOOL.tool.init()
 
 
 
-    disin.unselectedShapes = {}
-    disin.properties = {
+    TOOL.unselectedShapes = {}
+    TOOL.properties = {
         shapeVoxelLimit = 1000*2000,
 
         objectsLimit = 300,
 
         objectsLimitReached = function ()
-            return #disin.objects >= disin.properties.objectsLimit
+            return #TOOL.objects >= TOOL.properties.objectsLimit
         end,
 
         voxels = {
@@ -115,8 +116,8 @@ function initDisintegrator()
             getCount = function()
 
                 local voxelCount = 0
-                for i = 1, #disin.objects do
-                    voxelCount = voxelCount + GetShapeVoxelCount(disin.objects[i].shape)
+                for i = 1, #TOOL.objects do
+                    voxelCount = voxelCount + GetShapeVoxelCount(TOOL.objects[i].shape)
                 end
                 return voxelCount
 
@@ -124,7 +125,7 @@ function initDisintegrator()
 
             getLimitReached = function()
 
-                return disin.properties.voxels.getCount() > disin.properties.voxels.limit
+                return TOOL.properties.voxels.getCount() > TOOL.properties.voxels.limit
 
             end,
 
@@ -135,8 +136,8 @@ function initDisintegrator()
             local v = 0
             local x,y,z = nil,nil,nil
 
-            for i = 1, #disin.objects do
-                x,y,z = GetShapeSize(disin.objects[i].shape)
+            for i = 1, #TOOL.objects do
+                x,y,z = GetShapeSize(TOOL.objects[i].shape)
                 v = v + x*y*z
             end
 
@@ -145,12 +146,12 @@ function initDisintegrator()
         end,
     }
 
-    disin.isDisintegrating = false
-    disin.manageIsDisintegrating = function()
-        if disin.tool.input.didToggleDisintegrate() then
-            disin.isDisintegrating = not disin.isDisintegrating
+    TOOL.isDisintegrating = false
+    TOOL.manageIsDisintegrating = function()
+        if TOOL.tool.input.didToggleDisintegrate() then
+            TOOL.isDisintegrating = not TOOL.isDisintegrating
 
-            if disin.isDisintegrating then
+            if TOOL.isDisintegrating then
                 sound.ui.activate()
             else
                 sound.ui.deactivate()
@@ -160,93 +161,93 @@ function initDisintegrator()
     end
 
 
-    disin.addModeEnabled = false
-    disin.manageAddModeToggle = function ()
-        if disin.tool.input.didToggleAddMode() then
-            disin.addModeEnabled = not disin.addModeEnabled
+    TOOL.addModeEnabled = false
+    TOOL.manageAddModeToggle = function ()
+        if TOOL.tool.input.didToggleAddMode() then
+            TOOL.addModeEnabled = not TOOL.addModeEnabled
         end
     end
 
 
-    disin.visualEffects = {
+    TOOL.visualEffects = {
     }
-    disin.colors = {
+    TOOL.colors = {
         disintegrating = Vec(0,1,0.6),
         notDisintegrating = Vec(0.6,1,0)
     }
-    disin.color = disin.colors.notDisintegrating
-    disin.manageColor = function()
-        if disin.isDisintegrating then
-            disin.color = disin.colors.disintegrating
+    TOOL.color = TOOL.colors.notDisintegrating
+    TOOL.manageColor = function()
+        if TOOL.isDisintegrating then
+            TOOL.color = TOOL.colors.disintegrating
             return
         end
-        disin.color = disin.colors.notDisintegrating
+        TOOL.color = TOOL.colors.notDisintegrating
     end
-    disin.manageOutline = function()
+    TOOL.manageOutline = function()
 
-        local isDisin = disin.isDisintegrating
+        local isDisin = TOOL.isDisintegrating
 
-        local c = disin.color
+        local c = TOOL.color
         local a = 1
         if isDisin then a = 0.5 end
 
-        for i = 1, #disin.objects do
-            local shape = disin.objects[i].shape
+        for i = 1, #TOOL.objects do
+            local shape = TOOL.objects[i].shape
             DrawShapeOutline(shape, c[1], c[2], c[3], a)
         end
     end
 
 
 
-    disin.modes = {
+    TOOL.modes = {
         specific = 'specific', -- shapes
         general = 'general', -- bodies
     }
-    disin.mode = disin.modes.general
-    disin.manageSelectionMode = function()
-        if disin.tool.input.didChangeMode() then
+    TOOL.mode = TOOL.modes.general
+    TOOL.manageSelectionMode = function()
+        if TOOL.tool.input.didChangeMode() then
 
             sound.ui.switchMode()
 
-            if disin.mode == disin.modes.specific then
-                disin.mode = disin.modes.general
+            if TOOL.mode == TOOL.modes.specific then
+                TOOL.mode = TOOL.modes.general
             else
-                disin.mode = disin.modes.specific
+                TOOL.mode = TOOL.modes.specific
             end
         end
     end
 
 
 
-    disin.insert = {}
-    disin.insert.shape = function(shape)
+    TOOL.insert = {}
+    TOOL.insert.shape = function(shape)
         local disinObject = buildDisinObject(shape) -- Insert valid disin object.
         setmetatable(disinObject, disinObjectMetatable)
-        table.insert(disin.objects, disinObject)
+        table.insert(TOOL.objects, disinObject)
         dbp('Shape added. Voxels: ' .. GetShapeVoxelCount(shape) .. ' ... ' .. sfnTime())
     end
-    disin.insert.processShape = function(shape)
+    TOOL.insert.processShape = function(shape)
 
         local shapeBody = GetShapeBody(shape)
 
         local shapeWillInsert = true
-        local isShapeOversized = GetShapeVoxelCount(shape) > disin.properties.shapeVoxelLimit
-        local voxelLimitReached = disin.properties.voxels.getLimitReached()
+        local isShapeOversized = GetShapeVoxelCount(shape) > TOOL.properties.shapeVoxelLimit
+        local voxelLimitReached = TOOL.properties.voxels.getLimitReached()
 
 
-        if not disin.addModeEnabled then -- Enable selection add mode.
+        if not TOOL.addModeEnabled then -- Enable selection add mode.
 
-            for i = 1, #disin.objects do
+            for i = 1, #TOOL.objects do
 
-                if shape == disin.objects[i].shape then -- Check if shape is in disin.objects.
+                if shape == TOOL.objects[i].shape then -- Check if shape is in TOOL.objects.
 
-                    shapeWillInsert = false -- Remove shape that's already in disin.objects.
+                    shapeWillInsert = false -- Remove shape that's already in TOOL.objects.
 
-                    if disin.mode == disin.modes.general then -- Disin mode general. Remove all shapes in body.
+                    if TOOL.mode == TOOL.modes.general then -- Disin mode general. Remove all shapes in body.
 
                         if shapeBody == globalBody then -- Not global body.
 
-                            disin.setObjectToBeRemoved(disin.objects[i])
+                            TOOL.setObjectToBeRemoved(TOOL.objects[i])
 
                         else
 
@@ -254,10 +255,10 @@ function initDisintegrator()
                             dbp('#bodyShapes ' .. #bodyShapes)
 
                             for j = 1, #bodyShapes do
-                                for k = 1, #disin.objects do -- Compare body shapes to disin.objects shapes.
+                                for k = 1, #TOOL.objects do -- Compare body shapes to TOOL.objects shapes.
 
-                                    if bodyShapes[j] == disin.objects[k].shape then -- Body shape is in disin.objects.
-                                        disin.setObjectToBeRemoved(disin.objects[k]) -- Mark shape for removal
+                                    if bodyShapes[j] == TOOL.objects[k].shape then -- Body shape is in TOOL.objects.
+                                        TOOL.setObjectToBeRemoved(TOOL.objects[k]) -- Mark shape for removal
                                         dbp('Man removed body shape ' .. sfnTime())
                                     end
 
@@ -266,9 +267,9 @@ function initDisintegrator()
 
                         end
 
-                    elseif disin.mode == disin.modes.specific then -- Remove single shape.
+                    elseif TOOL.mode == TOOL.modes.specific then -- Remove single shape.
 
-                        disin.setObjectToBeRemoved(disin.objects[i])
+                        TOOL.setObjectToBeRemoved(TOOL.objects[i])
                         dbp('Man removed shape ' .. sfnTime())
 
                     end
@@ -282,15 +283,15 @@ function initDisintegrator()
 
 
         -- Warning messages.
-        if disin.properties.voxels.getLimitReached() or disin.properties.objectsLimitReached() then
+        if TOOL.properties.voxels.getLimitReached() or TOOL.properties.objectsLimitReached() then
 
             local message = "Voxel/Object limit reached! \n > Object might be merged with the whole map. \n > Too many disintigrating voxels = game crash. \n > Try specific mode."
-            disin.message.insert(message, colors.red)
+            TOOL.message.insert(message, colors.red)
 
             shapeWillInsert = false
             sound.ui.invalid()
 
-            dbp("Voxel limit reached: " .. disin.properties.voxels.getCount() .. " ... " .. sfnTime())
+            dbp("Voxel limit reached: " .. TOOL.properties.voxels.getCount() .. " ... " .. sfnTime())
 
         elseif isShapeOversized then
 
@@ -298,7 +299,7 @@ function initDisintegrator()
             shapeWillInsert = false
 
             local message = "Object Too Large! \n > Object might be merged with the whole map. \n > Try specific mode."
-            disin.message.insert(message, colors.red)
+            TOOL.message.insert(message, colors.red)
 
             sound.ui.invalid()
             dbp("Oversized shape rejected. Voxels: " .. GetShapeVoxelCount(shape) .. " ... " .. sfnTime())
@@ -309,7 +310,7 @@ function initDisintegrator()
         -- Insert valid shape 
         if shapeWillInsert then
 
-            disin.insert.shape(shape)
+            TOOL.insert.shape(shape)
             sound.ui.insertShape()
 
         elseif not isShapeOversized then
@@ -320,7 +321,7 @@ function initDisintegrator()
     end
 
 
-    disin.insert.body = function(shape)
+    TOOL.insert.body = function(shape)
 
         local body = GetShapeBody(shape)
 
@@ -329,41 +330,41 @@ function initDisintegrator()
             local bodyShapes = GetBodyShapes(body)
             for i = 1, #bodyShapes do
 
-                disin.insert.processShape(bodyShapes[i])
+                TOOL.insert.processShape(bodyShapes[i])
 
             end
 
         else
 
-            disin.insert.processShape(shape) -- Insert hit shape by default regardless of body shapes.
+            TOOL.insert.processShape(shape) -- Insert hit shape by default regardless of body shapes.
 
         end
 
     end
 
 
-    disin.manageObjectRemoval = function()
+    TOOL.manageObjectRemoval = function()
 
         local removeIndexes = {} -- Remove specified disin objects.
 
-        for i = 1, #disin.objects do
+        for i = 1, #TOOL.objects do
 
             local removeShape = false
 
-            local smallShape = disin.objects[i].functions.isShapeTooSmall()
-            local disintegrating = disin.isDisintegrating
+            local smallShape = TOOL.objects[i].functions.isShapeTooSmall()
+            local disintegrating = TOOL.isDisintegrating
 
             if smallShape and disintegrating then -- Small shape to remove.
 
                 removeShape = true
-                disin.objects[i].done = true
-                MakeHole(AabbGetShapeCenterPos(disin.objects[i].shape), 0.2, 0.2 ,0.2 ,0.2)
-                -- sound.disintegrate.done(AabbGetShapeCenterPos(disin.objects[i].shape))
+                TOOL.objects[i].done = true
+                MakeHole(AabbGetShapeCenterPos(TOOL.objects[i].shape), 0.2, 0.2 ,0.2 ,0.2)
+                -- sound.disintegrate.done(AabbGetShapeCenterPos(TOOL.objects[i].shape))
                 dbp('Small shape set for removal ' .. sfnTime())
 
             end
 
-            if disin.objects[i].remove then -- Cancelled shape to remove.
+            if TOOL.objects[i].remove then -- Cancelled shape to remove.
                 removeShape = true
             end
 
@@ -376,36 +377,36 @@ function initDisintegrator()
         for i = 1, #removeIndexes do
 
             local disinObjIndex = removeIndexes[i]
-            table.remove(disin.objects, disinObjIndex)
+            table.remove(TOOL.objects, disinObjIndex)
 
         end
 
     end
-    -- Mark object for removal. Removed in disin.manageObjectRemoval()
-    disin.setObjectToBeRemoved = function(disinObject)
+    -- Mark object for removal. Removed in TOOL.manageObjectRemoval()
+    TOOL.setObjectToBeRemoved = function(disinObject)
         disinObject.remove = true
     end
 
 
 
-    disin.undo = function ()
+    TOOL.undo = function ()
 
-        local lastIndex = #disin.objects
-        -- local lastShape = disin.objects[lastIndex].shape
+        local lastIndex = #TOOL.objects
+        -- local lastShape = TOOL.objects[lastIndex].shape
 
-        -- if disin.mode == disin.modes.specific then
+        -- if TOOL.mode == TOOL.modes.specific then
 
-            disin.setObjectToBeRemoved(disin.objects[lastIndex]) -- Remove last object entry
+            TOOL.setObjectToBeRemoved(TOOL.objects[lastIndex]) -- Remove last object entry
 
-        -- elseif disin.mode == disin.modes.general then
+        -- elseif TOOL.mode == TOOL.modes.general then
 
         --     local bodyShapes = GetBodyShapes(GetShapeBody(lastShape))
 
         --     for i = 1, #bodyShapes do -- All body shapes.
-        --         for j = 1, #disin.objects do -- Check all body shapes with disin.objects shapes.
+        --         for j = 1, #TOOL.objects do -- Check all body shapes with TOOL.objects shapes.
 
-        --             if bodyShapes[i] == disin.objects[j].shape then -- Body shape is in disin.objects.
-        --                 disin.setObjectToBeRemoved(disin.objects[j]) -- Mark shape for removal
+        --             if bodyShapes[i] == TOOL.objects[j].shape then -- Body shape is in TOOL.objects.
+        --                 TOOL.setObjectToBeRemoved(TOOL.objects[j]) -- Mark shape for removal
         --             end
 
         --         end
@@ -418,9 +419,9 @@ function initDisintegrator()
 
 
 
-    disin.manageToolAnimation = function()
+    TOOL.manageToolAnimation = function()
 
-        if disin.tool.active() then
+        if TOOL.tool.active() then
 
             local toolShapes = GetBodyShapes(GetToolBody())
             local toolPos = Vec(0.6,-0.5,-0.4) -- Base tool pos
@@ -431,7 +432,7 @@ function initDisintegrator()
             local toolUsing = nil
             local toolNotUsing = nil
 
-            if disin.isDisintegrating then 
+            if TOOL.isDisintegrating then 
                 toolUsing = toolShapes[1]
                 toolNotUsing = toolShapes[2]
             else
@@ -453,33 +454,33 @@ function initDisintegrator()
     end
 
 
-    -- disin.highlightUnselectedShapes = function()
+    -- TOOL.highlightUnselectedShapes = function()
 
-        -- disin.unselectedShapes = {}
+        -- TOOL.unselectedShapes = {}
 
-        -- if not disin.isDisintegrating then
+        -- if not TOOL.isDisintegrating then
 
-        --     for i = 1, #disin.objects do
+        --     for i = 1, #TOOL.objects do
 
-        --         for j = 1, #disin.objects do
-        --             QueryRejectShape(disin.objects[j].shape)
+        --         for j = 1, #TOOL.objects do
+        --             QueryRejectShape(TOOL.objects[j].shape)
         --         end
 
-        --         local sMin, sMax = GetShapeBounds(disin.objects[i].shape)
+        --         local sMin, sMax = GetShapeBounds(TOOL.objects[i].shape)
         --         sMin = VecAdd(sMin, Vec(-1, -1, -1))
         --         sMax = VecAdd(sMax, Vec(1, 1, 1))
         --         local queriedShapes = QueryAabbShapes(sMin, sMax)
 
         --         for j = 1, #queriedShapes do
-        --             table.insert(disin.unselectedShapes, queriedShapes[j])
+        --             table.insert(TOOL.unselectedShapes, queriedShapes[j])
         --         end
 
         --     end
 
 
-        --     -- Draw disin.unselectedShapes indicators.
-        --     for i = 1, #disin.unselectedShapes do
-        --         DrawDot(AabbGetShapeCenterPos(disin.unselectedShapes[i]), 0.2, 0.2, 1, 0, 0, 1)
+        --     -- Draw TOOL.unselectedShapes indicators.
+        --     for i = 1, #TOOL.unselectedShapes do
+        --         DrawDot(AabbGetShapeCenterPos(TOOL.unselectedShapes[i]), 0.2, 0.2, 1, 0, 0, 1)
         --     end
 
         -- end
@@ -487,21 +488,21 @@ function initDisintegrator()
     -- end
 
 
-    disin.highlightUnselectedShapes = function()
+    TOOL.highlightUnselectedShapes = function()
 
-        disin.unselectedShapes = {}
+        TOOL.unselectedShapes = {}
 
-        if not disin.isDisintegrating then
+        if not TOOL.isDisintegrating then
 
             local sMin, sMax
-            if #disin.objects >= 1 then
-                sMin, sMax = GetShapeBounds(disin.objects[1].shape)
+            if #TOOL.objects >= 1 then
+                sMin, sMax = GetShapeBounds(TOOL.objects[1].shape)
             end
 
             -- Choose min and max points.
-            for i = 1, #disin.objects do
+            for i = 1, #TOOL.objects do
 
-                local obj = disin.objects[i]
+                local obj = TOOL.objects[i]
                 local mi, ma = GetShapeBounds(obj.shape)
 
                 -- Min point
@@ -521,8 +522,8 @@ function initDisintegrator()
             end
 
             -- Reject selected shapes.
-            for i = 1, #disin.objects do
-                QueryRejectShape(disin.objects[i].shape)
+            for i = 1, #TOOL.objects do
+                QueryRejectShape(TOOL.objects[i].shape)
             end
 
             local b = 1 -- Buffer.
@@ -547,7 +548,7 @@ function initDisintegrator()
     end
 
 
-    disin.message = {
+    TOOL.message = {
         message = nil,
         color = colors.white,
         cancelCount = 0,
@@ -558,46 +559,46 @@ function initDisintegrator()
         },
 
         insert = function(message, color)
-            disin.message.timer.time = (string.len(message) * 2) * GetTimeStep() + 2 -- Message time based on message length.
-            disin.message.color = color
-            disin.message.message = message
-            disin.message.cancelCount = 0 -- Reset cancel flag.
+            TOOL.message.timer.time = (string.len(message) * 2) * GetTimeStep() + 2 -- Message time based on message length.
+            TOOL.message.color = color
+            TOOL.message.message = message
+            TOOL.message.cancelCount = 0 -- Reset cancel flag.
         end,
 
         drawText = function ()
             UiPush()
-                local c = disin.message.color
+                local c = TOOL.message.color
                 UiColor(c[1], c[2], c[3], 0.8)
 
                 UiTranslate(UiCenter(), UiMiddle()+200)
                 UiFont('bold.ttf', 28)
                 UiAlign('center middle')
                 UiTextShadow(0,0,0,0.8,2,0.2)
-                UiText(disin.message.message)
+                UiText(TOOL.message.message)
             UiPop()
         end,
 
         draw = function()
 
-            if disin.tool.input.didSelect() then
-                disin.message.cancelCount = disin.message.cancelCount + 1
+            if TOOL.tool.input.didSelect() then
+                TOOL.message.cancelCount = TOOL.message.cancelCount + 1
             end
 
-            if disin.message.timer.time >= 0 then
-                disin.message.timer.time = disin.message.timer.time - GetTimeStep()
+            if TOOL.message.timer.time >= 0 then
+                TOOL.message.timer.time = TOOL.message.timer.time - GetTimeStep()
 
-                if disin.message.cancelCount > 1 then -- Check if message has been cancelled.
+                if TOOL.message.cancelCount > 1 then -- Check if message has been cancelled.
 
-                    disin.message.timer.time = 0 -- Remove message if player shoots again.
+                    TOOL.message.timer.time = 0 -- Remove message if player shoots again.
 
                 else
 
-                    disin.message.drawText()
+                    TOOL.message.drawText()
 
                 end
             end
 
-            dbw('disin.message.timer.time', disin.message.timer.time)
+            dbw('TOOL.message.timer.time', TOOL.message.timer.time)
         end
 
     }
@@ -608,44 +609,44 @@ end
 function manageDisintegrator()
 
     -- Input.
-    local didSelect = disin.tool.input.didSelect()
-    local didReset = disin.tool.input.didReset()
-    local didUndo = disin.tool.input.didUndo()
+    local didSelect = TOOL.tool.input.didSelect()
+    local didReset = TOOL.tool.input.didReset()
+    local didUndo = TOOL.tool.input.didUndo()
 
 
     if didSelect then -- Shoot disin
 
-        -- Add mode: reject shapes already in disin.objects.
-        if disin.addModeEnabled then
-            for i = 1, #disin.objects do
-                QueryRejectShape(disin.objects[i].shape)
+        -- Add mode: reject shapes already in TOOL.objects.
+        if TOOL.addModeEnabled then
+            for i = 1, #TOOL.objects do
+                QueryRejectShape(TOOL.objects[i].shape)
             end
         end
 
         local camTr = GetCameraTransform()
         local hit, hitPos, hitShape, hitBody = RaycastFromTransform(camTr)
-        if hit and disin.mode == disin.modes.specific then
+        if hit and TOOL.mode == TOOL.modes.specific then
 
-            disin.insert.processShape(hitShape)
+            TOOL.insert.processShape(hitShape)
 
-        elseif hit and disin.mode == disin.modes.general then
+        elseif hit and TOOL.mode == TOOL.modes.general then
 
-            disin.insert.body(hitShape)
+            TOOL.insert.body(hitShape)
 
         end
 
     elseif didReset then -- Reset disin
 
-        disin.objects = {}
-        disin.isDisintegrating = false
+        TOOL.objects = {}
+        TOOL.isDisintegrating = false
 
         sound.ui.reset()
 
         dbw('Disin objects reset', sfnTime())
 
-    elseif didUndo and #disin.objects >= 1 then -- Undo last object insertion (body or shapes)
+    elseif didUndo and #TOOL.objects >= 1 then -- Undo last object insertion (body or shapes)
 
-        disin.undo()
+        TOOL.undo()
 
     end
 
@@ -729,29 +730,29 @@ function draw()
 
     drawInfoWindow()
 
-    disin.message.draw()
+    TOOL.message.draw()
 
-    -- disin.highlightUnselectedShapes()
+    -- TOOL.highlightUnselectedShapes()
 
     -- Draw dots at hit positions.
-    if disin.isDisintegrating then
-        for i = 1, #disin.objects do
-            for j = 1, #disin.objects[i].hit.positions do
+    if TOOL.isDisintegrating then
+        for i = 1, #TOOL.objects do
+            for j = 1, #TOOL.objects[i].hit.positions do
                 DrawDot(
-                    disin.objects[i].hit.positions[j],
+                    TOOL.objects[i].hit.positions[j],
                     math.random()/5,
                     math.random()/5,
-                    disin.colors.disintegrating[1],
-                    disin.colors.disintegrating[2],
-                    disin.colors.disintegrating[3],
+                    TOOL.colors.disintegrating[1],
+                    TOOL.colors.disintegrating[2],
+                    TOOL.colors.disintegrating[3],
                     math.random()/2 + 0.3
                 )
             end
         end
     end
 
-    -- Draw disin.mode text
-    if disin.tool.active() then
+    -- Draw TOOL.mode text
+    if TOOL.tool.active() then
         UiPush()
 
             local fontSize = 26
@@ -766,21 +767,21 @@ function draw()
 
             UiPush()
 
-                -- if not disin.isDisintegrating then
+                -- if not TOOL.isDisintegrating then
 
                     -- Selection mode.
                     UiColor(1,1,1,a)
-                    local modeText = 'MODE: ' .. string.upper(disin.mode) .. ' (c) '
+                    local modeText = 'MODE: ' .. string.upper(TOOL.mode) .. ' (c) '
                     UiText(modeText)
                     UiTranslate(0, -vMargin)
 
                         UiPush()
 
                             -- Disintegration voxels count.
-                            local voxelCount = disin.properties.voxels.getCount()
+                            local voxelCount = TOOL.properties.voxels.getCount()
                             
                             local c = 1
-                            if disin.properties.voxels.getLimitReached() then
+                            if TOOL.properties.voxels.getLimitReached() then
                                 c = 0
                             end
                             -- local c = (1000*500 / (voxelCount + 100*100)) ^ 2
@@ -791,12 +792,12 @@ function draw()
                             UiText(voxText)
 
                             -- Disintegration objects count.
-                            local disinObjects = #disin.objects
+                            local disinObjects = #TOOL.objects
                             -- local c = (30 / (disinObjects + 1)) ^ 2
                             -- UiColor(1, c, c, a)
 
                             local c = 1
-                            if disin.properties.objectsLimitReached() then
+                            if TOOL.properties.objectsLimitReached() then
                                 c = 0
                             end
                             UiColor(1, c, c, a)
@@ -816,7 +817,7 @@ function draw()
 
 
     -- Crosshair Add Mode Indicator
-    if disin.addModeEnabled then
+    if TOOL.addModeEnabled then
         UiPush()
 
             UiColor(1,1,1,1)
@@ -832,14 +833,14 @@ function draw()
 
 
     -- -- Draw crosshairs
-    -- if disin.tool.active() and not disin.isDisintegrating then
+    -- if TOOL.tool.active() and not TOOL.isDisintegrating then
     --     UiPush()
 
     --         UiAlign('center middle')
     --         UiTranslate(UiCenter(), UiMiddle())
 
     --         local crosshairImage = 'img/crosshairs/crosshair_specific.png'
-    --         if disin.mode == disin.modes.general then
+    --         if TOOL.mode == TOOL.modes.general then
     --             crosshairImage = 'img/crosshairs/crosshair_general.png'
     --         end
 
