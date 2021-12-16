@@ -20,7 +20,7 @@ function disintegrateShape(disinObject)
 
     if not disinObject.start.done then
 
-        disinObject.start.disintegrationStep()
+        disinObject.start.setDisinPoints()
         disinObject.start.done = true
         dbw('Disintegrating start done', sfnTime())
 
