@@ -16,7 +16,7 @@ function buildDisinObject(shape)
 
 
     obj.done = false
-    obj.holeSize = 0.5
+    obj.holeSize = 0.4
     obj.maxPoints = 30
     obj.sizeDiv = 10 -- Sets number of points (shapeSize/sizeDiv)
     obj.tooSmall = false -- Shape too small = remove shape.
@@ -25,7 +25,7 @@ function buildDisinObject(shape)
     -- Query point tracking.
     obj.relPoints = {}
     obj.usedRelPoints = {}
-    obj.relPointResolution = obj.holeSize/2
+    obj.relPointResolution = obj.holeSize * 2
     for x = 0, obj.size[1]/10, obj.relPointResolution do
         for y = 0, obj.size[2]/10, obj.relPointResolution do
             for z = 0, obj.size[3]/10, obj.relPointResolution do
@@ -55,74 +55,60 @@ function buildDisinObject(shape)
 
     obj.spread.disintegrationStep = function()
 
-        --[[
-            -- obj.hit.positions = {} -- Reset current frame's hit positions.
 
-            -- if GetTime() - lastcall > 0.1 then
+        obj.hit.positions = {} -- Reset current frame's hit positions.
 
-            --     local randomRelPointsIndex = math.random(1, #obj.relPoints)
-            --     local randomRelPoint = obj.relPoints[randomRelPointsIndex]
-            --     local position = TransformToParentPoint(obj.shapeTr, randomRelPoint)
+        local callRate = 0.01
 
-            --     table.insert(obj.spread.points, position) -- Use the random rel point as a spread point.
-            --     table.insert(obj.usedRelPoints, randomRelPoint)
+        if GetTime() - lastcall > callRate then
 
-            --     table.remove(obj.relPoints, randomRelPointsIndex)
+            -- Check each disin point.
+            for i = 1, #obj.spread.points do
 
-            --     lastcall = lastcall + 0.1
-            -- end
+                obj.query.rejectIrrelevantShapes()
 
+                local rcHit, rcHitPos, n, rcShape = QueryClosestPoint(obj.spread.points[i], 0.4)
+                if rcHit and rcShape == obj.shape then
 
-            -- -- Check each disin point.
-            -- for i = 1, #obj.spread.points do
+                    if IsMaterialUnbreakable(GetShapeMaterialAtPosition(rcShape, rcHitPos)) then
 
-            --     obj.query.rejectIrrelevantShapes()
+                        obj.spread.points[i] = obj.takeUniqueRelPos()
 
-            --     local rcHit, rcHitPos, n, rcShape = QueryClosestPoint(obj.spread.points[i], obj.holeSize * 4)
-            --     if rcHit and rcShape == obj.shape then
+                    else
 
-            --         if IsMaterialUnbreakable(GetShapeMaterialAtPosition(rcShape, rcHitPos)) then
+                        -- Set new spread position at closest point.
+                        obj.spread.points[i] = VecAdd(
+                            rcHitPos,
+                            Vec(
+                                (math.random()-0.5) * obj.holeSize/2,
+                                (math.random()-0.5) * obj.holeSize/2,
+                                (math.random()-0.5) * obj.holeSize/2)
+                        )
 
-            --             -- obj.setRandomDisintegrationPosition(obj.spread.points, i, sMin, sMax) -- Cannot break material.
+                        table.insert(obj.hit.positions, rcHitPos) -- Draws dots only at hit points.
 
-            --         else
+                        local holeSizeMult = 1
+                        obj.disintegratePos(obj.spread.points[i], holeSizeMult) -- Pos disintegration.
 
-            --              -- Set new spread position at closest point.
-            --             obj.spread.points[i] = VecAdd(
-            --                 rcHitPos,
-            --                 Vec(
-            --                     math.random()-0.5,
-            --                     math.random()-0.5,
-            --                     math.random()-0.5)
-            --             )
+                    end
 
-            --             table.insert(obj.hit.positions, rcHitPos) -- Draws dots only at hit points.
+                else
 
-            --         end
+                    obj.spread.points[i] = obj.takeUniqueRelPos()
 
-            --     else
+                end
 
-            --         -- table.insert(obj.usedPoints, TransformToLocalPoint(obj.shapeTr, obj.spread.points[i]))
+            end
 
-            --         -- obj.setRandomDisintegrationPosition(obj.spread.points, i, sMin, sMax) -- no hit
+            lastcall = lastcall + callRate
 
-            --         -- dbw('#obj.usedPoints', #obj.usedPoints)
+        end
 
-            --     end
-
-            --     -- local holeSizeMult = gtZero(math.random() - 0.8) + 1
-            --     local holeSizeMult = 1
-            --     obj.disintegratePos(obj.spread.points[i], holeSizeMult) -- Pos disintegration.
-
-            -- end
-        ]]
-
-
-
+        dbw('#obj.relPoints', #obj.relPoints)
 
 
         if db then
-            obj.drawRelPointDots()
+            -- obj.drawRelPointDots()
             ObbDrawShape(obj.shape)
             dbw('obj.shapeTrOffset', obj.shapeTrOffset)
         end
@@ -134,15 +120,13 @@ function buildDisinObject(shape)
 
     -- ! Sets the starting positions of the disintegrations.
     obj.start = {}
-    obj.start.numberOfPoints = 1
+    obj.start.numberOfPoints = 10
     obj.start.done = false
     obj.start.disintegrationStart = function() -- Set the initial raycast hit positions from the perimeter of the shape aabb.
 
         -- local sMin, sMax = GetShapeBounds(obj.shape)
 
         for i = 1, obj.start.numberOfPoints do -- Set starting spread positions.
-
-            -- local position = obj.setRandomDisintegrationPosition(obj.spread.points, i, sMin, sMax)
 
             local randomRelPointsIndex = math.random(1, #obj.relPoints)
             local randomRelPoint = obj.relPoints[randomRelPointsIndex]
@@ -162,16 +146,16 @@ function buildDisinObject(shape)
     -- Get a unique pos and remove it from the obj.relPoints table.
     obj.takeUniqueRelPos = function()
 
-        -- local randomRelPointsIndex = math.random(1, #obj.relPoints)
-        -- local randomRelPoint = obj.relPoints[randomRelPointsIndex]
-        -- local position = TransformToParentPoint(obj.shapeTr, randomRelPoint)
+        local randomRelPointsIndex = math.random(0, #obj.relPoints)
+        local randomRelPoint = obj.relPoints[randomRelPointsIndex]
+        local position = TransformToParentPoint(obj.shapeTr, randomRelPoint)
 
-        -- -- table.insert(obj.spread.points, position) -- Use the random rel point as a spread point.
-        -- -- table.insert(obj.usedRelPoints, randomRelPoint)
+        -- table.insert(obj.spread.points, position) -- Use the random rel point as a spread point.
+        table.insert(obj.usedRelPoints, randomRelPoint)
 
-        -- table.remove(obj.relPoints, randomRelPointsIndex)
+        table.remove(obj.relPoints, randomRelPointsIndex)
 
-        -- return position
+        return position
 
     end
 
@@ -203,34 +187,6 @@ function buildDisinObject(shape)
         DrawDot(shapTrAdjusted.pos, 0.2,0.2, 1,0,1, 0.5, true)
 
     end
-
-    -- obj.drawRelPointDots = function ()
-
-    --     -- local shapTrAdjusted = Transform(TransformToParentPoint(obj.shapeTr, obj.shapeTrOffset), obj.shapeTr.rot)
-    --     -- DrawDot(obj.shapeTr.pos, 0.2,0.2, 1,1,1, 0.5, true)
-    --     -- DrawDot(shapTrAdjusted.pos, 0.2,0.2, 1,0,1, 0.5, true)
-
-    --     local bodyTr = GetBodyTransform(obj.body)
-    --     DrawDot(bodyTr.pos, 0.25,0.25, 0,1,0, 0.25, true)
-
-    --     local shapeBodyPosOffset = VecSub(bodyTr.pos, obj.shapeTr.pos)
-    --     local shapTrAdjusted = Transform(shapeBodyPosOffset, obj.shapeTr.rot)
-
-    --     dbp('')
-
-    --     for i = 1, #obj.relPoints do
-    --         local pos = TransformToParentPoint(obj.shapeTr, obj.relPoints[i])
-    --         DebugCross(pos, 1,1,0, 1)
-    --     end
-
-    --     for i = 1, #obj.usedRelPoints do
-    --         local pos = TransformToParentPoint(obj.shapeTr, obj.usedRelPoints[i])
-    --         DebugCross(pos, 1,0,0, 1)
-    --     end
-
-    --     dbl(obj.shapeTr.pos, shapTrAdjusted.pos)
-
-    -- end
 
     obj.disintegratePos = function(pos, mult)
 
@@ -269,7 +225,8 @@ function buildDisinObject(shape)
     obj.query.rejectIrrelevantShapes = function () -- Reject all shapes except the disin shape.
 
         local sMin, sMax = GetShapeBounds(obj.shape)
-        local queriedShapes = QueryAabbShapes(sMin, sMax)
+        -- local queriedShapes = QueryAabbShapes(sMin, sMax)
+        local queriedShapes = FindShapes('', true)
 
         for i = 1, #queriedShapes do
 

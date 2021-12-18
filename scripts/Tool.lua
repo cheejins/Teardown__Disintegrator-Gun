@@ -11,8 +11,8 @@ function initTool()
     Tool.tool = {
 
         setup = {
-            name = 'disintegrator',
-            title = 'Disintegrator',
+            name = 'disintegrator2',
+            title = 'Disintegrator 2.0',
             voxPath = 'MOD/vox/disintegrator.vox',
         },
 
