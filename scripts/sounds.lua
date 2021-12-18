@@ -24,8 +24,8 @@ function initSounds()
         disintegrate = {
 
             loop = function(pos)
-                PlayLoop(loops.disinLoop, pos, 0.6 * sm) -- Disintigrate sound.
-                PlayLoop(loops.disinLoop, game.ppos, 0.1 * sm)
+                -- PlayLoop(loops.disinLoop, pos, 0.6 * sm) -- Disintigrate sound.
+                -- PlayLoop(loops.disinLoop, game.ppos, 0.1 * sm)
             end,
 
             done = function(pos)

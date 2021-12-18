@@ -132,6 +132,27 @@
 
     end
 
+    function ObbDrawBodyDimensions(body)
+
+        local bodyTr = GetBodyTransform(body)
+        local sx, sy, sz = 20,20,20
+        local shapeDim = VecScale(Vec(sx, sy, sz), 0.1)
+        local maxTr = Transform(TransformToParentPoint(bodyTr, shapeDim), bodyTr.rot)
+
+        for i = 1, 3 do
+
+            local vec = Vec(0,0,0)
+
+            vec[i] = shapeDim[i]
+
+            DebugLine(bodyTr.pos, maxTr.pos)
+            DebugLine(bodyTr.pos, TransformToParentPoint(bodyTr, vec), 0,1,0, 1)
+            DebugLine(maxTr.pos, TransformToParentPoint(maxTr, VecScale(vec, -1)), 1,0,0, 1)
+
+        end
+
+    end
+
 
 --[[TABLES]]
     function tableSwapIndex(t, i1, i2)

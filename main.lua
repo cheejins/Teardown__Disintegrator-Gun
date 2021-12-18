@@ -73,24 +73,11 @@ end
 
 function tick()
 
-
-
-    -- local tr1 = Transform(Vec(0,1,0), QuatEuler(90,0,0))
-    -- local tr2 = Transform(Vec(0,0,0), QuatEuler(0,0,0))
-
-    -- local trpt  = TransformToParentTransform(tr1, tr2)
-    -- -- local trlt  = TransformToLocalTransform(tr1, tr2)
-
-    -- dbray(tr1, 1, 0,1,0, 1)
-    -- dbray(tr2, 1, 1,0,0, 1)
-
-    -- dbray(trpt, 1, 1,1,1, 1)
-    -- -- dbray(trlt, 1, 0,0,0, 1)
-
-    -- -- dbray(Transform(Vec(0,0,0), QuatEuler(90,0,0)), 2, 0,0,1, 0.5)
-
-
     game = {ppos = GetPlayerTransform().pos}
+
+    for index, obj in ipairs(Tool.objects) do
+        obj.tick()
+    end
 
     if info.checkInfoClosed() then -- info.lua
 
@@ -107,12 +94,12 @@ function tick()
         manageDisintegrator()
         disintegrateShapes()
 
-        disinTest()
-
         dbw('Disin mode', Tool.mode)
         dbw('Tool.isDisintegrating', Tool.isDisintegrating)
 
     end
+
+
 
 end
 
@@ -138,23 +125,5 @@ function draw()
     end
 
 end
-
-
-function disinTest()
-
-    for i = 1, #Tool.objects do
-
-        local obj = Tool.objects[i]
-
-        -- for j = 1, #obj.usedRelPositions do
-        --     DrawDot(TransformToParentPoint(obj.shapeTr, obj.usedRelPositions[j]), 0.2,0.2, 1,0,1, 1)
-        -- end
-
-        if db then ObbDrawShape(shape) end
-
-    end
-
-end
-
 
 UpdateQuickloadPatch()

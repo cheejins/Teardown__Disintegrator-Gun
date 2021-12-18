@@ -4,10 +4,11 @@ function buildDisinObject(shape)
 
 
     obj.body = GetShapeBody(shape)
+    obj.mass = GetBodyMass(obj.body)
 
     obj.shape = shape
     obj.shapeTr = GetShapeWorldTransform(shape) -- Real shape transform.
-    obj.shapeTrOffset = Vec() -- Compensates for the size change of the shape.
+    obj.shapeTrOffset = GetShapeLocalTransform(shape).pos -- Compensates for the size change of the shape.
 
     local sx, sy, sz = GetShapeSize(shape)
     obj.size = Vec(sx, sy, sz)
@@ -39,6 +40,10 @@ function buildDisinObject(shape)
     }
 
 
+    obj.tick = function()
+        obj.updateDisinObject() -- Update for new frame
+    end
+
 
 
     -- ! Raycasting closest points after a disintegration step.
@@ -49,12 +54,6 @@ function buildDisinObject(shape)
     lastcall = GetTime()
 
     obj.spread.disintegrationStep = function()
-
-        local shapeTrPrev = TransformCopy(obj.shapeTr) -- Tr from the previous frame.
-        local shapeSizePrev = obj.shapeSize -- shape size from the previous frame.
-
-        obj.updateDisinObject() -- Update for new frame
-
 
         --[[
             -- obj.hit.positions = {} -- Reset current frame's hit positions.
@@ -119,31 +118,14 @@ function buildDisinObject(shape)
         ]]
 
 
-        if obj.shapeSize < shapeSizePrev then
 
-            dbw('shapeSize', shapeSizePrev .. ' to ' .. obj.shapeSize .. ' ' .. sfnTime())
 
-            local changeRelPos = TransformToLocalPoint(obj.shapeTr, shapeTrPrev.pos)
-            obj.shapeTrOffset = VecAdd(obj.shapeTrOffset, changeRelPos)
+
+        if db then
+            obj.drawRelPointDots()
+            ObbDrawShape(obj.shape)
+            dbw('obj.shapeTrOffset', obj.shapeTrOffset)
         end
-
-
-        --[[
-
-            > offset relative to true tr
-            > shapeTr moves from last frame, ttlp previous frame's shapeTr pos
-
-
-            > obj.shapeTr = True tr
-            > obj.shapeTrOffset = Total rel pos moved transform
-            > Get true tr change each time a disin step is called on the shape.
-            > The grid will be projected from obj.shapeTrOffset only.
-            > obj.shapeTr is only used as a base for obj.shapeTrOffset and start grid.
-                > Everything else relies on obj.shapeTrOffset.
-        ]]
-
-        dbw('obj.shapeTrOffset', obj.shapeTrOffset)
-        obj.drawRelPointDots()
 
     end
 
@@ -196,25 +178,59 @@ function buildDisinObject(shape)
 
     obj.drawRelPointDots = function ()
 
-        local shapTrAdjusted = Transform(TransformToParentPoint(obj.shapeTr, obj.shapeTrOffset), obj.shapeTr.rot)
+        local bodyTr = GetBodyTransform(obj.body)
 
-        DrawDot(obj.shapeTr.pos, 0.5,0.5, 1,1,1, 0.5, true)
-        DrawDot(shapTrAdjusted.pos, 0.3,0.3, 1,0,1, 1, true)
+
+        local bodyTrAdjustedPos = TransformToParentPoint(bodyTr, obj.shapeTrOffset)
+        local shapTrAdjusted = Transform(bodyTrAdjustedPos, obj.shapeTr.rot)
+
 
         for i = 1, #obj.relPoints do
             local pos = TransformToParentPoint(shapTrAdjusted, obj.relPoints[i])
-            -- DrawDot(pos, 0.1,0.1, 1,1,0, 0.5, true)
             DebugCross(pos, 1,1,0, 1)
         end
 
         for i = 1, #obj.usedRelPoints do
             local pos = TransformToParentPoint(shapTrAdjusted, obj.usedRelPoints[i])
-            -- DrawDot(pos, 0.1,0.1, 1,0,0, 0.5, true)
             DebugCross(pos, 1,0,0, 1)
-
         end
 
+
+        dbl(obj.shapeTr.pos, shapTrAdjusted.pos)
+
+        DrawDot(bodyTr.pos, 0.25,0.25, 0,1,0, 0.25, true)
+        DrawDot(obj.shapeTr.pos, 0.2,0.2, 1,1,1, 0.5, true)
+        DrawDot(shapTrAdjusted.pos, 0.2,0.2, 1,0,1, 0.5, true)
+
     end
+
+    -- obj.drawRelPointDots = function ()
+
+    --     -- local shapTrAdjusted = Transform(TransformToParentPoint(obj.shapeTr, obj.shapeTrOffset), obj.shapeTr.rot)
+    --     -- DrawDot(obj.shapeTr.pos, 0.2,0.2, 1,1,1, 0.5, true)
+    --     -- DrawDot(shapTrAdjusted.pos, 0.2,0.2, 1,0,1, 0.5, true)
+
+    --     local bodyTr = GetBodyTransform(obj.body)
+    --     DrawDot(bodyTr.pos, 0.25,0.25, 0,1,0, 0.25, true)
+
+    --     local shapeBodyPosOffset = VecSub(bodyTr.pos, obj.shapeTr.pos)
+    --     local shapTrAdjusted = Transform(shapeBodyPosOffset, obj.shapeTr.rot)
+
+    --     dbp('')
+
+    --     for i = 1, #obj.relPoints do
+    --         local pos = TransformToParentPoint(obj.shapeTr, obj.relPoints[i])
+    --         DebugCross(pos, 1,1,0, 1)
+    --     end
+
+    --     for i = 1, #obj.usedRelPoints do
+    --         local pos = TransformToParentPoint(obj.shapeTr, obj.usedRelPoints[i])
+    --         DebugCross(pos, 1,0,0, 1)
+    --     end
+
+    --     dbl(obj.shapeTr.pos, shapTrAdjusted.pos)
+
+    -- end
 
     obj.disintegratePos = function(pos, mult)
 
@@ -233,6 +249,8 @@ function buildDisinObject(shape)
     obj.updateDisinObject = function()
 
         obj.shapeTr = GetShapeWorldTransform(obj.shape)
+
+        obj.mass = GetBodyMass(obj.body)
 
         local sx, sy, sz = GetShapeSize(shape)
         obj.shapeSize = (sx + sy + sz)
