@@ -230,6 +230,9 @@
     --- return number if not = 0, else return 0.00000001
     function rdm(min, max) return math.random(min or 0, max or 1) end
 
+    function ternary ( cond , T , F )
+        if cond then return T else return F end
+    end
 
 
 --[[FORMATTING]]

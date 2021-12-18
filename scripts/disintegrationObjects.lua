@@ -7,7 +7,7 @@ function buildDisinObject(shape)
 
     obj.shape = shape
     obj.shapeTr = GetShapeWorldTransform(shape) -- Real shape transform.
-    obj.shapeTrAdjusted = GetShapeWorldTransform(shape) -- Compensates for the size change of the shape.
+    obj.shapeTrOffset = Vec() -- Compensates for the size change of the shape.
 
     local sx, sy, sz = GetShapeSize(shape)
     obj.size = Vec(sx, sy, sz)
@@ -24,7 +24,7 @@ function buildDisinObject(shape)
     -- Query point tracking.
     obj.relPoints = {}
     obj.usedRelPoints = {}
-    obj.relPointResolution = obj.holeSize
+    obj.relPointResolution = obj.holeSize/2
     for x = 0, obj.size[1]/10, obj.relPointResolution do
         for y = 0, obj.size[2]/10, obj.relPointResolution do
             for z = 0, obj.size[3]/10, obj.relPointResolution do
@@ -50,86 +50,100 @@ function buildDisinObject(shape)
 
     obj.spread.disintegrationStep = function()
 
-        --> shapeTr
-        -- local shapeTrStartOfDisinStep = GetShapeWorldTransform(obj.shape)
+        local shapeTrPrev = TransformCopy(obj.shapeTr) -- Tr from the previous frame.
+        local shapeSizePrev = obj.shapeSize -- shape size from the previous frame.
 
-        obj.updateDisinObject()
-        obj.hit.positions = {} -- Reset current frame's hit positions.
-
-        if GetTime() - lastcall > 0.1 then
-
-            local randomRelPointsIndex = math.random(1, #obj.relPoints)
-            local randomRelPoint = obj.relPoints[randomRelPointsIndex]
-            local position = TransformToParentPoint(obj.shapeTr, randomRelPoint)
-
-            table.insert(obj.spread.points, position) -- Use the random rel point as a spread point.
-            table.insert(obj.usedRelPoints, randomRelPoint)
-
-            table.remove(obj.relPoints, randomRelPointsIndex)
-
-            lastcall = lastcall + 0.1
-        end
-
-        obj.drawRelPointDots()
-
-
-        -- -- Check each disin point.
-        -- for i = 1, #obj.spread.points do
-
-        --     obj.query.rejectIrrelevantShapes()
-
-        --     local rcHit, rcHitPos, n, rcShape = QueryClosestPoint(obj.spread.points[i], obj.holeSize * 4)
-        --     if rcHit and rcShape == obj.shape then
-
-        --         if IsMaterialUnbreakable(GetShapeMaterialAtPosition(rcShape, rcHitPos)) then
-
-        --             -- obj.setRandomDisintegrationPosition(obj.spread.points, i, sMin, sMax) -- Cannot break material.
-
-        --         else
-
-        --              -- Set new spread position at closest point.
-        --             obj.spread.points[i] = VecAdd(
-        --                 rcHitPos,
-        --                 Vec(
-        --                     math.random()-0.5,
-        --                     math.random()-0.5,
-        --                     math.random()-0.5)
-        --             )
-
-        --             table.insert(obj.hit.positions, rcHitPos) -- Draws dots only at hit points.
-
-        --         end
-
-        --     else
-
-        --         -- table.insert(obj.usedPoints, TransformToLocalPoint(obj.shapeTr, obj.spread.points[i]))
-
-        --         -- obj.setRandomDisintegrationPosition(obj.spread.points, i, sMin, sMax) -- no hit
-
-        --         -- dbw('#obj.usedPoints', #obj.usedPoints)
-
-        --     end
-
-        --     -- local holeSizeMult = gtZero(math.random() - 0.8) + 1
-        --     local holeSizeMult = 1
-        --     obj.disintegratePos(obj.spread.points[i], holeSizeMult) -- Pos disintegration.
-
-        -- end
-
-
-        --> Update shapeTrAdjusted after holes are created.
-        -- local shapePosChange = VecSub(shapeTrStartOfDisinStep.pos, GetShapeWorldTransform(obj.shape).pos)
-        -- obj.shapeTrAdjusted.pos = VecAdd(obj.shapeTr.pos, shapePosChange)
+        obj.updateDisinObject() -- Update for new frame
 
 
         --[[
-            > obj.shapeTr = True tr
-            > obj.shapeTrAdjusted = Total rel pos moved transform
-            > Get true tr change each time a disin step is called on the shape.
-            > The grid will be projected from obj.shapeTrAdjusted only.
-            > obj.shapeTr is only used as a base for obj.shapeTrAdjusted and start grid.
-                > Everything else relies on obj.shapeTrAdjusted.
+            -- obj.hit.positions = {} -- Reset current frame's hit positions.
+
+            -- if GetTime() - lastcall > 0.1 then
+
+            --     local randomRelPointsIndex = math.random(1, #obj.relPoints)
+            --     local randomRelPoint = obj.relPoints[randomRelPointsIndex]
+            --     local position = TransformToParentPoint(obj.shapeTr, randomRelPoint)
+
+            --     table.insert(obj.spread.points, position) -- Use the random rel point as a spread point.
+            --     table.insert(obj.usedRelPoints, randomRelPoint)
+
+            --     table.remove(obj.relPoints, randomRelPointsIndex)
+
+            --     lastcall = lastcall + 0.1
+            -- end
+
+
+            -- -- Check each disin point.
+            -- for i = 1, #obj.spread.points do
+
+            --     obj.query.rejectIrrelevantShapes()
+
+            --     local rcHit, rcHitPos, n, rcShape = QueryClosestPoint(obj.spread.points[i], obj.holeSize * 4)
+            --     if rcHit and rcShape == obj.shape then
+
+            --         if IsMaterialUnbreakable(GetShapeMaterialAtPosition(rcShape, rcHitPos)) then
+
+            --             -- obj.setRandomDisintegrationPosition(obj.spread.points, i, sMin, sMax) -- Cannot break material.
+
+            --         else
+
+            --              -- Set new spread position at closest point.
+            --             obj.spread.points[i] = VecAdd(
+            --                 rcHitPos,
+            --                 Vec(
+            --                     math.random()-0.5,
+            --                     math.random()-0.5,
+            --                     math.random()-0.5)
+            --             )
+
+            --             table.insert(obj.hit.positions, rcHitPos) -- Draws dots only at hit points.
+
+            --         end
+
+            --     else
+
+            --         -- table.insert(obj.usedPoints, TransformToLocalPoint(obj.shapeTr, obj.spread.points[i]))
+
+            --         -- obj.setRandomDisintegrationPosition(obj.spread.points, i, sMin, sMax) -- no hit
+
+            --         -- dbw('#obj.usedPoints', #obj.usedPoints)
+
+            --     end
+
+            --     -- local holeSizeMult = gtZero(math.random() - 0.8) + 1
+            --     local holeSizeMult = 1
+            --     obj.disintegratePos(obj.spread.points[i], holeSizeMult) -- Pos disintegration.
+
+            -- end
         ]]
+
+
+        if obj.shapeSize < shapeSizePrev then
+
+            dbw('shapeSize', shapeSizePrev .. ' to ' .. obj.shapeSize .. ' ' .. sfnTime())
+
+            local changeRelPos = TransformToLocalPoint(obj.shapeTr, shapeTrPrev.pos)
+            obj.shapeTrOffset = VecAdd(obj.shapeTrOffset, changeRelPos)
+        end
+
+
+        --[[
+
+            > offset relative to true tr
+            > shapeTr moves from last frame, ttlp previous frame's shapeTr pos
+
+
+            > obj.shapeTr = True tr
+            > obj.shapeTrOffset = Total rel pos moved transform
+            > Get true tr change each time a disin step is called on the shape.
+            > The grid will be projected from obj.shapeTrOffset only.
+            > obj.shapeTr is only used as a base for obj.shapeTrOffset and start grid.
+                > Everything else relies on obj.shapeTrOffset.
+        ]]
+
+        dbw('obj.shapeTrOffset', obj.shapeTrOffset)
+        obj.drawRelPointDots()
 
     end
 
@@ -182,14 +196,22 @@ function buildDisinObject(shape)
 
     obj.drawRelPointDots = function ()
 
+        local shapTrAdjusted = Transform(TransformToParentPoint(obj.shapeTr, obj.shapeTrOffset), obj.shapeTr.rot)
+
+        DrawDot(obj.shapeTr.pos, 0.5,0.5, 1,1,1, 0.5, true)
+        DrawDot(shapTrAdjusted.pos, 0.3,0.3, 1,0,1, 1, true)
+
         for i = 1, #obj.relPoints do
-            local pos = TransformToParentPoint(obj.shapeTrAdjusted, obj.relPoints[i])
-            DrawDot(pos, 0.1,0.1, 1,1,0, 1, true)
+            local pos = TransformToParentPoint(shapTrAdjusted, obj.relPoints[i])
+            -- DrawDot(pos, 0.1,0.1, 1,1,0, 0.5, true)
+            DebugCross(pos, 1,1,0, 1)
         end
 
         for i = 1, #obj.usedRelPoints do
-            local pos = TransformToParentPoint(obj.shapeTrAdjusted, obj.usedRelPoints[i])
-            DrawDot(pos, 0.1,0.1, 1,0,0, 1, true)
+            local pos = TransformToParentPoint(shapTrAdjusted, obj.usedRelPoints[i])
+            -- DrawDot(pos, 0.1,0.1, 1,0,0, 0.5, true)
+            DebugCross(pos, 1,0,0, 1)
+
         end
 
     end
@@ -214,7 +236,6 @@ function buildDisinObject(shape)
 
         local sx, sy, sz = GetShapeSize(shape)
         obj.shapeSize = (sx + sy + sz)
-
         obj.size.x = sx
         obj.size.y = sy
         obj.size.z = sz
